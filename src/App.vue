@@ -549,14 +549,12 @@ const useSavedSignature = (sigObject) => {
   const imgData = typeof sigObject === 'string' ? sigObject : sigObject.data;
   const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2);
   
-  // SINGLE SIGNATURE LOGIC: Replace old one
   signatureImage.value = imgData;
-  
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   isSigDropdownOpen.value = false;
   
-  // Reset position to center to ensure visibility
+  // Center new signature
   sigPos.value = { x: 50, y: 100 };
   const baseWidth = 200;
   sigSize.value = { 
@@ -623,14 +621,14 @@ const startDragSig = (e) => {
   window.addEventListener('touchend', onEnd);
 };
 
+// FIXED RESIZE FUNCTION (Corrected Logic)
 const startResize = (e, direction) => {
   e.preventDefault(); 
   e.stopPropagation();
   isResizingSig.value = true;
-  resizeDirection = direction;
   
   const pos = getClientPos(e);
-  const startPos = { x: pos.x, y: pos.y }; // Local var
+  const startPos = { x: pos.x, y: pos.y }; 
   const startSizeVal = { width: sigSize.value.width, height: sigSize.value.height };
   const startPosX = sigPos.value.x;
   const startPosY = sigPos.value.y;
@@ -764,7 +762,7 @@ const downloadPdf = async () => {
   animation: slideDown 0.2s ease-out;
 }
 .dropdown-item {
-  background: transparent; width: 100%; text-align: left; transition: background 0.2s; cursor: pointer;
+  background: transparent; width: 100%; text-align: left; transition: background 0.2s; cursor: pointer; color: #fff;
 }
 .dropdown-item:hover { background: rgba(255,255,255,0.08); }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
