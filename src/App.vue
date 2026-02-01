@@ -24,9 +24,13 @@
             </button>
             
             <div v-if="isTextMode || selectedTextIndex !== null" class="d-flex align-items-center px-2 animate-fade-in border-start border-secondary ms-1">
-              <button @click="adjustFontSize(-2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2">➖</button>
-              <span class="mx-1 small fw-mono text-muted user-select-none" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
-              <button @click="adjustFontSize(2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2">➕</button>
+              <button @click="adjustFontSize(-2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2" title="Decrease Size">➖</button>
+              
+              <span class="mx-1 fw-bold text-white fs-6" style="min-width: 24px; text-align: center; user-select: none;">
+                {{ currentFontSize }}
+              </span>
+              
+              <button @click="adjustFontSize(2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2" title="Increase Size">➕</button>
               
               <div class="vr bg-secondary mx-2" style="height: 14px;"></div>
               
@@ -41,29 +45,51 @@
               @click="openSignaturePad" 
               class="btn btn-warning fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center gap-2 hover-lift">
               <span>✍️</span>
-              <span class="d-none d-sm-inline">Sign</span>
+              <span class="d-none d-sm-inline">New Sign</span>
             </button>
 
             <button 
               @click="toggleSigDropdown" 
               class="btn btn-dark border border-secondary rounded-circle shadow-sm d-flex align-items-center justify-content-center hover-white"
               style="width: 36px; height: 36px;"
-              title="Saved Signatures">
+              title="Select Saved Signature">
               <small>▼</small>
             </button>
 
-            <div v-if="isSigDropdownOpen" class="custom-dropdown-menu mt-2 p-1 shadow-lg border border-secondary bg-dark rounded-3 position-absolute start-50 translate-middle-x" style="top: 100%;">
-              <div class="dropdown-header text-muted small text-uppercase fw-bold px-3 py-1">Library</div>
-              <button @click="openSavedLibrary" class="dropdown-item d-flex align-items-center justify-content-between gap-3 text-white rounded-2 px-3 py-2">
-                <span class="d-flex align-items-center gap-2">
-                  <span>📂</span> Saved Signatures
-                </span>
-                <span class="badge bg-secondary rounded-pill">{{ savedSignatures.length }}</span>
-              </button>
-              <div v-if="savedSignatures.length > 0" class="border-top border-secondary my-1"></div>
-              <button v-if="savedSignatures.length > 0" @click="clearAllSignatures" class="dropdown-item text-danger small px-3 py-1 text-center">
-                Clear All
-              </button>
+            <div v-if="isSigDropdownOpen" class="custom-dropdown-menu mt-2 shadow-lg border border-secondary bg-dark rounded-3 position-absolute start-50 translate-middle-x" style="top: 100%; width: 220px;">
+              <div class="dropdown-header text-muted small text-uppercase fw-bold px-3 py-2 border-bottom border-secondary bg-black bg-opacity-25 rounded-top">
+                Saved Signatures
+              </div>
+              
+              <div class="overflow-auto" style="max-height: 250px;">
+                <div v-if="savedSignatures.length === 0" class="text-center text-muted py-3 small">
+                  No saved signatures
+                </div>
+
+                <div 
+                  v-for="(sig, idx) in savedSignatures" 
+                  :key="idx"
+                  class="dropdown-item d-flex align-items-center justify-content-between px-2 py-2 border-bottom border-secondary border-opacity-25"
+                  @click="useSavedSignature(sig)">
+                  
+                  <div class="bg-white rounded p-1 d-flex align-items-center justify-content-center" style="width: 140px; height: 50px;">
+                    <img :src="sig.data" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                  </div>
+
+                  <button 
+                    @click.stop="deleteSavedSignature(idx)" 
+                    class="btn btn-sm btn-outline-danger border-0 p-1"
+                    title="Delete">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div v-if="savedSignatures.length > 0" class="p-2 border-top border-secondary bg-black bg-opacity-25 rounded-bottom">
+                <button @click="clearAllSignatures" class="btn btn-sm btn-danger w-100 py-0" style="font-size: 12px;">
+                  Clear All
+                </button>
+              </div>
             </div>
             
             <div v-if="isSigDropdownOpen" @click="isSigDropdownOpen = false" class="position-fixed top-0 start-0 w-100 h-100" style="z-index: -1; cursor: default;"></div>
@@ -77,7 +103,7 @@
             class="btn btn-success rounded-pill px-4 fw-bold shadow-lg hover-lift d-flex align-items-center gap-2"
             :disabled="!pdfFile">
             <span>💾</span>
-            <span class="d-none d-md-inline">Save</span>
+            <span class="d-none d-md-inline">Save PDF</span>
           </button>
         </div>
 
@@ -218,44 +244,7 @@
         
         <div class="card-footer border-secondary d-flex justify-content-between py-3">
           <button @click="clearSignature" class="btn btn-outline-light rounded-pill px-4">Clear</button>
-          <button @click="saveSignature" class="btn btn-primary rounded-pill px-5 shadow-sm">Use This</button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="showSavedSignatures" class="modal-overlay" @click.self="showSavedSignatures = false">
-      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 90%; max-width: 400px; max-height: 80vh; border-radius: 15px;">
-        <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0 fw-bold">📂 My Signatures</h5>
-          <button @click="showSavedSignatures = false" class="btn-close btn-close-white"></button>
-        </div>
-        <div class="card-body overflow-auto p-3">
-          <div v-if="savedSignatures.length === 0" class="text-center text-muted py-5">
-            <div class="mb-2" style="font-size: 2rem; opacity: 0.5;">📭</div>
-            <p>No saved signatures.</p>
-          </div>
-          <div class="d-grid gap-3">
-            <div 
-              v-for="(sig, idx) in savedSignatures" 
-              :key="idx" 
-              class="saved-sig-item bg-white rounded p-3 position-relative shadow-sm transition-all"
-              @click="useSavedSignature(sig)">
-              <img 
-                :src="sig.data" 
-                class="img-fluid" 
-                style="height: 60px; object-fit: contain; display: block; margin: 0 auto;"
-              />
-              <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0 hover-opacity-100" style="background: rgba(13, 110, 253, 0.1); cursor: pointer;">
-                <span class="badge bg-primary">Tap to use</span>
-              </div>
-              <button 
-                @click.stop="deleteSavedSignature(idx)" 
-                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                style="width: 24px; height: 24px; font-size: 14px; z-index: 10;">
-                ×
-              </button>
-            </div>
-          </div>
+          <button @click="saveSignature" class="btn btn-primary rounded-pill px-5 shadow-sm">Use & Override</button>
         </div>
       </div>
     </div>
@@ -290,11 +279,10 @@ const isDraggingText = ref(false);
 // Signature
 const isSigDropdownOpen = ref(false);
 const showSignaturePad = ref(false);
-const showSavedSignatures = ref(false);
 const savedSignatures = ref([]);
 const sigCanvas = ref(null);
 const sigPadContainer = ref(null);
-const signatureImage = ref(null); 
+const signatureImage = ref(null); // Single Ref = Single Signature
 const sigPos = ref({ x: 50, y: 50 });
 const sigSize = ref({ width: 150, height: 75 });
 const selectedSignature = ref(false);
@@ -305,9 +293,6 @@ const isResizingSig = ref(false);
 let isDrawing = false;
 let canvasRect = null;
 let ctx = null;
-let startPos = { x: 0, y: 0 };
-let startSize = { width: 0, height: 0 };
-let resizeDirection = '';
 
 onMounted(() => {
   const stored = localStorage.getItem('my_signatures');
@@ -388,10 +373,8 @@ const selectText = (index) => {
   currentFontStyle.value = item.fontStyle;
 };
 
-// NEW: Duplicate Text Function
 const duplicateText = (index) => {
   const original = textElements.value[index];
-  // Create a clean copy with a small offset
   textElements.value.push({
     x: original.x + 20,
     y: original.y + 20,
@@ -400,7 +383,6 @@ const duplicateText = (index) => {
     fontWeight: original.fontWeight,
     fontStyle: original.fontStyle
   });
-  // Select the new one immediately
   selectText(textElements.value.length - 1);
 };
 
@@ -439,7 +421,6 @@ const toggleItalic = () => {
 };
 
 const startDragText = (e, index) => {
-  // .stop logic handled in template, but good practice here too
   if (e.type === 'touchstart') e.preventDefault();
   
   isDraggingText.value = true;
@@ -482,11 +463,6 @@ const removeText = (index) => {
 // --- 3. Signature Logic ---
 const toggleSigDropdown = () => {
   isSigDropdownOpen.value = !isSigDropdownOpen.value;
-};
-
-const openSavedLibrary = () => {
-  isSigDropdownOpen.value = false;
-  showSavedSignatures.value = true;
 };
 
 const openSignaturePad = async () => {
@@ -565,7 +541,7 @@ const saveSignature = () => {
   savedSignatures.value.push(sigObject);
   localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
   
-  useSavedSignature(sigObject); // This overwrites the current signature
+  useSavedSignature(sigObject);
   closeSignaturePad();
 };
 
@@ -573,15 +549,14 @@ const useSavedSignature = (sigObject) => {
   const imgData = typeof sigObject === 'string' ? sigObject : sigObject.data;
   const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2);
   
-  // OVERRIDE LOGIC: Simply setting this replaces the old one because
-  // we are using a single `signatureImage` ref, not an array.
+  // SINGLE SIGNATURE LOGIC: Replace old one
   signatureImage.value = imgData;
   
   selectedSignature.value = true;
   selectedTextIndex.value = null;
-  showSavedSignatures.value = false;
+  isSigDropdownOpen.value = false;
   
-  // Center it on screen so user knows it changed/added
+  // Reset position to center to ensure visibility
   sigPos.value = { x: 50, y: 100 };
   const baseWidth = 200;
   sigSize.value = { 
@@ -655,10 +630,8 @@ const startResize = (e, direction) => {
   resizeDirection = direction;
   
   const pos = getClientPos(e);
-  startPos.x = pos.x;
-  startPos.y = pos.y;
-  startSize.width = sigSize.value.width;
-  startSize.height = sigSize.value.height;
+  const startPos = { x: pos.x, y: pos.y }; // Local var
+  const startSizeVal = { width: sigSize.value.width, height: sigSize.value.height };
   const startPosX = sigPos.value.x;
   const startPosY = sigPos.value.y;
 
@@ -666,22 +639,21 @@ const startResize = (e, direction) => {
     if (moveEvent.type === 'touchmove') moveEvent.preventDefault();
     const movePos = getClientPos(moveEvent);
     const deltaX = movePos.x - startPos.x;
-    
-    const ratio = startSize.width / startSize.height;
+    const ratio = startSizeVal.width / startSizeVal.height;
     
     if (direction.includes('e')) {
-      const newWidth = Math.max(50, startSize.width + deltaX);
+      const newWidth = Math.max(50, startSizeVal.width + deltaX);
       sigSize.value.width = newWidth;
       sigSize.value.height = newWidth / ratio;
     }
     if (direction.includes('w')) {
-      const newWidth = Math.max(50, startSize.width - deltaX);
+      const newWidth = Math.max(50, startSizeVal.width - deltaX);
       sigSize.value.width = newWidth;
       sigSize.value.height = newWidth / ratio;
-      sigPos.value.x = startPosX + (startSize.width - newWidth);
+      sigPos.value.x = startPosX + (startSizeVal.width - newWidth);
     }
     if (direction.includes('n')) {
-      sigPos.value.y = startPosY + (startSize.height - sigSize.value.height);
+      sigPos.value.y = startPosY + (startSizeVal.height - sigSize.value.height);
     }
   };
   
@@ -787,14 +759,14 @@ const downloadPdf = async () => {
 
 /* CUSTOM DROPDOWN */
 .custom-dropdown-menu {
-  min-width: 200px;
+  min-width: 220px;
   z-index: 2500;
   animation: slideDown 0.2s ease-out;
 }
 .dropdown-item {
-  background: transparent; border: none; width: 100%; text-align: left; transition: background 0.2s; cursor: pointer;
+  background: transparent; width: 100%; text-align: left; transition: background 0.2s; cursor: pointer;
 }
-.dropdown-item:hover { background: rgba(255,255,255,0.1); }
+.dropdown-item:hover { background: rgba(255,255,255,0.08); }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
 
 /* ELEMENT WRAPPER */
@@ -806,7 +778,6 @@ const downloadPdf = async () => {
   border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
 }
-/* Ensure dragged item is above everything */
 .element-wrapper.is-dragging {
   z-index: 9999 !important;
   cursor: grabbing !important;
@@ -861,7 +832,4 @@ const downloadPdf = async () => {
   z-index: 3000;
   backdrop-filter: blur(5px);
 }
-.saved-sig-item { border: 1px solid #dee2e6; cursor: pointer; }
-.saved-sig-item:hover { border-color: #0d6efd; transform: scale(1.02); }
-.hover-opacity-100:hover { opacity: 1 !important; }
 </style>
