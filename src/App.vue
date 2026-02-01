@@ -1,7 +1,19 @@
 <template>
-  <div class="bg-dark min-vh-100 text-white pb-5">
+  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden">
     
-    <nav class="navbar navbar-dark bg-secondary mb-4 shadow-sm">
+    <div class="animation-layer">
+      <div class="cute-file walker">
+        <div class="face">📄</div>
+        <div class="legs"></div>
+      </div>
+      
+      <div class="fight-scene">
+        <div class="cute-file fighter fighter-1">📝</div>
+        <div class="vs-spark">💥</div>
+        <div class="cute-file fighter fighter-2">📉</div>
+      </div>
+    </div>
+    <nav class="navbar navbar-dark bg-secondary mb-4 shadow-sm" style="z-index: 10; position: relative;">
       <div class="container d-flex justify-content-between align-items-center">
         <span class="navbar-brand mb-0 h1 fw-bold">Vue PDF Editor</span>
         
@@ -57,7 +69,7 @@
       </div>
     </nav>
 
-    <div class="container d-flex flex-column align-items-center">
+    <div class="container d-flex flex-column align-items-center" style="z-index: 10; position: relative;">
       
       <div v-if="!pdfFile" class="card bg-dark border-secondary text-center p-5" style="width: 100%; max-width: 600px; border-style: dashed !important;">
         <div class="card-body">
@@ -140,7 +152,6 @@
             style="pointer-events: none; user-select: none;"
           />
           
-          <!-- Resize handles -->
           <template v-if="selectedSignature">
             <div 
               class="position-absolute bg-white border border-2 border-primary rounded-circle"
@@ -208,6 +219,7 @@
 </template>
 
 <script setup>
+// ... existing script setup code ...
 import { ref, watch } from 'vue';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -245,7 +257,6 @@ let startSize = { width: 0, height: 0 };
 let resizeDirection = '';
 
 // --- 1. File Upload & Rendering ---
-// --- 1. File Upload & Rendering ---
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -254,9 +265,7 @@ const handleFileUpload = async (event) => {
   pdfBytes.value = arrayBuffer;
   pdfFile.value = file;
 
-  // Create a copy (.slice(0)) of the buffer for the renderer.
-  // This prevents PDF.js from "detaching" the original arrayBuffer,
-  // keeping pdfBytes.value valid for the download function later.
+  // Use slice(0) to pass a copy to the renderer
   renderPdf(arrayBuffer.slice(0));
 };
 
@@ -275,7 +284,7 @@ const renderPdf = async (buffer) => {
   await page.render({ canvasContext: context, viewport: viewport }).promise;
 };
 
-// --- 2. Text Logic ---
+// ... existing Text Logic ...
 const toggleTextMode = () => {
   isTextMode.value = !isTextMode.value;
   if (isTextMode.value) {
@@ -306,6 +315,7 @@ const selectText = (index) => {
   selectedSignature.value = false;
   currentFontSize.value = textElements.value[index].fontSize;
   currentFontWeight.value = textElements.value[index].fontWeight;
+  currentFontWeight.value = textElements.value[index].fontWeight;
   currentFontStyle.value = textElements.value[index].fontStyle;
 };
 
@@ -327,8 +337,6 @@ const updateSelectedTextStyle = () => {
 
 const startDragText = (e, index) => {
   e.preventDefault();
-  
-  // Allow dragging from anywhere in the container
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
@@ -360,7 +368,7 @@ const removeText = (index) => {
   }
 };
 
-// --- 3. Signature Logic ---
+// ... existing Signature Logic ...
 const startDrawing = (e) => {
   e.preventDefault();
   isDrawing = true;
@@ -410,7 +418,6 @@ const saveSignature = () => {
   const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
   
-  // Check if signature is empty
   let hasDrawing = false;
   for (let i = 3; i < data.length; i += 4) {
     if (data[i] > 0) {
@@ -441,7 +448,6 @@ const removeSignature = () => {
   selectedSignature.value = false;
 };
 
-// Drag signature
 const startDragSig = (e) => {
   if (isResizingSig.value) return;
   
@@ -470,7 +476,6 @@ const startDragSig = (e) => {
   window.addEventListener('mouseup', onMouseUp);
 };
 
-// Resize signature
 const startResize = (e, direction) => {
   e.preventDefault();
   e.stopPropagation();
@@ -525,29 +530,25 @@ const startResize = (e, direction) => {
   window.addEventListener('mouseup', onMouseUp);
 };
 
-// Deselect when clicking canvas
 watch(isTextMode, (newVal) => {
   if (newVal) {
     selectedSignature.value = false;
   }
 });
 
-// --- 4. Save/Download Logic ---
+// ... existing Save/Download Logic ...
 const downloadPdf = async () => {
   if (!pdfBytes.value) return;
   
   try {
-    // Create a copy of the ArrayBuffer to avoid detachment issues
     const pdfBytesCopy = pdfBytes.value.slice(0);
     const pdfDoc = await PDFDocument.load(pdfBytesCopy);
     const pages = pdfDoc.getPages();
     const firstPage = pages[0];
     const { height } = firstPage.getSize();
 
-    // Draw Text - only if there are text elements with content
     for (const item of textElements.value) {
       if (item.text && item.text.trim()) {
-        // Select appropriate font based on weight and style
         let font;
         if (item.fontWeight === 'bold' && item.fontStyle === 'italic') {
           font = await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique);
@@ -569,7 +570,6 @@ const downloadPdf = async () => {
       }
     }
 
-    // Draw Signature
     if (signatureImage.value) {
       const pngImage = await pdfDoc.embedPng(signatureImage.value);
       firstPage.drawImage(pngImage, {
@@ -587,7 +587,6 @@ const downloadPdf = async () => {
     link.download = 'edited_document.pdf';
     link.click();
     
-    // Cleanup
     setTimeout(() => URL.revokeObjectURL(link.href), 100);
   } catch (error) {
     console.error('Error saving PDF:', error);
@@ -595,3 +594,88 @@ const downloadPdf = async () => {
   }
 };
 </script>
+
+<style>
+/* Animation Container: Fixed to background */
+.animation-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* Common File Styles */
+.cute-file {
+  position: absolute;
+  font-size: 3rem;
+  user-select: none;
+}
+
+/* Walking Animation */
+.walker {
+  bottom: 20px;
+  left: -50px;
+  animation: walkAcross 15s linear infinite;
+}
+
+/* Fighting Scene */
+.fight-scene {
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  width: 150px;
+  height: 100px;
+}
+
+.fighter {
+  transition: transform 0.1s;
+}
+
+.fighter-1 {
+  left: 0;
+  animation: fightLeft 1s infinite alternate;
+}
+
+.fighter-2 {
+  right: 0;
+  animation: fightRight 1s infinite alternate;
+}
+
+.vs-spark {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  animation: spark 0.5s infinite;
+}
+
+/* Keyframes */
+@keyframes walkAcross {
+  0% { transform: translateX(0) rotate(0deg); left: -50px; }
+  25% { transform: translateX(25vw) rotate(5deg); }
+  50% { transform: translateX(50vw) rotate(-5deg); }
+  75% { transform: translateX(75vw) rotate(5deg); }
+  100% { transform: translateX(110vw) rotate(0deg); left: 100%; }
+}
+
+@keyframes fightLeft {
+  0% { transform: translateX(0) rotate(-10deg); }
+  100% { transform: translateX(20px) rotate(10deg); }
+}
+
+@keyframes fightRight {
+  0% { transform: translateX(0) rotate(10deg); }
+  100% { transform: translateX(-20px) rotate(-10deg); }
+}
+
+@keyframes spark {
+  0% { opacity: 0; scale: 1; }
+  50% { opacity: 1; scale: 1.5; }
+  100% { opacity: 0; scale: 1; }
+}
+</style>
