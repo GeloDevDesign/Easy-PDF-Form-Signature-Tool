@@ -1,10 +1,9 @@
 <template>
-  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden">
+  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden d-flex flex-column">
     
     <div class="animation-layer">
       <div class="cute-file walker">
         <div class="face">📄</div>
-        <div class="legs"></div>
       </div>
       
       <div class="fight-scene">
@@ -69,7 +68,10 @@
       </div>
     </nav>
 
-    <div class="container d-flex flex-column align-items-center" style="z-index: 10; position: relative;">
+    <div 
+      class="container d-flex flex-column align-items-center" 
+      :class="{ 'justify-content-center flex-grow-1': !pdfFile }"
+      style="z-index: 10; position: relative;">
       
       <div v-if="!pdfFile" class="card bg-dark border-secondary text-center p-5" style="width: 100%; max-width: 600px; border-style: dashed !important;">
         <div class="card-body">
@@ -153,7 +155,7 @@
           />
           
           <template v-if="selectedSignature">
-            <div 
+             <div 
               class="position-absolute bg-white border border-2 border-primary rounded-circle"
               style="width: 12px; height: 12px; bottom: -6px; right: -6px; cursor: se-resize; z-index: 1001;"
               @mousedown.stop="startResize($event, 'se')"
@@ -182,9 +184,7 @@
             </button>
           </template>
         </div>
-
       </div>
-
     </div>
 
     <div v-if="showSignaturePad" class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.8); z-index: 1050;">
@@ -219,7 +219,6 @@
 </template>
 
 <script setup>
-// ... existing script setup code ...
 import { ref, watch } from 'vue';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -284,7 +283,7 @@ const renderPdf = async (buffer) => {
   await page.render({ canvasContext: context, viewport: viewport }).promise;
 };
 
-// ... existing Text Logic ...
+// ... Text Logic ...
 const toggleTextMode = () => {
   isTextMode.value = !isTextMode.value;
   if (isTextMode.value) {
@@ -314,7 +313,6 @@ const selectText = (index) => {
   selectedTextIndex.value = index;
   selectedSignature.value = false;
   currentFontSize.value = textElements.value[index].fontSize;
-  currentFontWeight.value = textElements.value[index].fontWeight;
   currentFontWeight.value = textElements.value[index].fontWeight;
   currentFontStyle.value = textElements.value[index].fontStyle;
 };
@@ -368,7 +366,7 @@ const removeText = (index) => {
   }
 };
 
-// ... existing Signature Logic ...
+// ... Signature Logic ...
 const startDrawing = (e) => {
   e.preventDefault();
   isDrawing = true;
@@ -536,7 +534,7 @@ watch(isTextMode, (newVal) => {
   }
 });
 
-// ... existing Save/Download Logic ...
+// ... Save/Download Logic ...
 const downloadPdf = async () => {
   if (!pdfBytes.value) return;
   
@@ -596,7 +594,7 @@ const downloadPdf = async () => {
 </script>
 
 <style>
-/* Animation Container: Fixed to background */
+/* Animation Container */
 .animation-layer {
   position: absolute;
   top: 0;
@@ -608,27 +606,26 @@ const downloadPdf = async () => {
   opacity: 0.4;
 }
 
-/* Common File Styles */
 .cute-file {
   position: absolute;
   font-size: 3rem;
   user-select: none;
 }
 
-/* Walking Animation */
+/* Updated: Roaming Animation */
 .walker {
-  bottom: 20px;
-  left: -50px;
-  animation: walkAcross 15s linear infinite;
+  animation: roam 20s linear infinite;
 }
 
-/* Fighting Scene */
+/* Updated: Center Fighting Scene */
 .fight-scene {
   position: absolute;
-  top: 10%;
-  right: 10%;
+  top: 50%;
+  left: 50%;
   width: 150px;
   height: 100px;
+  /* Centers the fight scene perfectly */
+  transform: translate(-50%, -50%);
 }
 
 .fighter {
@@ -654,13 +651,13 @@ const downloadPdf = async () => {
   animation: spark 0.5s infinite;
 }
 
-/* Keyframes */
-@keyframes walkAcross {
-  0% { transform: translateX(0) rotate(0deg); left: -50px; }
-  25% { transform: translateX(25vw) rotate(5deg); }
-  50% { transform: translateX(50vw) rotate(-5deg); }
-  75% { transform: translateX(75vw) rotate(5deg); }
-  100% { transform: translateX(110vw) rotate(0deg); left: 100%; }
+/* Roam: Moves randomly around the screen edges */
+@keyframes roam {
+  0% { left: 10%; top: 10%; transform: rotate(0deg); }
+  25% { left: 80%; top: 20%; transform: rotate(10deg); }
+  50% { left: 70%; top: 80%; transform: rotate(-5deg); }
+  75% { left: 20%; top: 60%; transform: rotate(5deg); }
+  100% { left: 10%; top: 10%; transform: rotate(0deg); }
 }
 
 @keyframes fightLeft {
