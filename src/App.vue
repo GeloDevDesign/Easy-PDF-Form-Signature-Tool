@@ -35,26 +35,24 @@
             </div>
           </div>
 
-          <div class="position-relative d-inline-block">
-            <div class="btn-group shadow-sm rounded-pill">
-              
-              <button 
-                @click="openSignaturePad" 
-                class="btn btn-warning fw-bold d-flex align-items-center gap-2 ps-3 pe-2 py-1"
-                style="border-top-left-radius: 50rem; border-bottom-left-radius: 50rem; border-right: 1px solid rgba(0,0,0,0.1);">
-                <span>✍️</span>
-                <span class="d-none d-sm-inline">Sign</span>
-              </button>
+          <div class="position-relative d-flex align-items-center gap-2">
+            
+            <button 
+              @click="openSignaturePad" 
+              class="btn btn-warning fw-bold rounded-pill px-3 shadow-sm d-flex align-items-center gap-2 hover-lift">
+              <span>✍️</span>
+              <span class="d-none d-sm-inline">Sign</span>
+            </button>
 
-              <button 
-                @click="toggleSigDropdown" 
-                class="btn btn-warning py-1 px-2 d-flex align-items-center justify-content-center"
-                style="border-top-right-radius: 50rem; border-bottom-right-radius: 50rem; width: 30px;">
-                <small>▼</small>
-              </button>
-            </div>
+            <button 
+              @click="toggleSigDropdown" 
+              class="btn btn-dark border border-secondary rounded-circle shadow-sm d-flex align-items-center justify-content-center hover-white"
+              style="width: 36px; height: 36px;"
+              title="Saved Signatures">
+              <small>▼</small>
+            </button>
 
-            <div v-if="isSigDropdownOpen" class="custom-dropdown-menu mt-2 p-1 shadow-lg border border-secondary bg-dark rounded-3 position-absolute start-50 translate-middle-x">
+            <div v-if="isSigDropdownOpen" class="custom-dropdown-menu mt-2 p-1 shadow-lg border border-secondary bg-dark rounded-3 position-absolute start-50 translate-middle-x" style="top: 100%;">
               <div class="dropdown-header text-muted small text-uppercase fw-bold px-3 py-1">Library</div>
               <button @click="openSavedLibrary" class="dropdown-item d-flex align-items-center justify-content-between gap-3 text-white rounded-2 px-3 py-2">
                 <span class="d-flex align-items-center gap-2">
@@ -120,7 +118,7 @@
           v-for="(item, index) in textElements" 
           :key="'text-' + index"
           class="element-wrapper position-absolute"
-          :class="{ 'is-selected': selectedTextIndex === index }"
+          :class="{ 'is-selected': selectedTextIndex === index, 'is-dragging': isDraggingText && selectedTextIndex === index }"
           :style="{ 
             left: item.x + 'px', 
             top: item.y + 'px',
@@ -128,8 +126,8 @@
             touchAction: 'none',
             maxWidth: '90%'
           }"
-          @mousedown="startDragText($event, index)"
-          @touchstart="startDragText($event, index)"
+          @mousedown.stop="startDragText($event, index)"
+          @touchstart.stop="startDragText($event, index)"
           @click.stop="selectText(index)">
           
           <div class="dynamic-input-container">
@@ -153,8 +151,11 @@
             />
           </div>
           
-          <div v-if="selectedTextIndex === index" class="position-absolute start-50 translate-middle-x" style="top: -35px;">
-             <button @click.stop="removeText(index)" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 10px;">
+          <div v-if="selectedTextIndex === index" class="position-absolute start-50 translate-middle-x d-flex gap-1" style="top: -40px;">
+             <button @click.stop="duplicateText(index)" class="btn btn-info btn-sm rounded-pill px-3 shadow-sm fw-bold text-dark" style="font-size: 11px;">
+              COPY
+            </button>
+             <button @click.stop="removeText(index)" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 11px;">
               DELETE
             </button>
           </div>
@@ -172,12 +173,12 @@
             zIndex: selectedSignature ? 1000 : 1,
             touchAction: 'none'
           }"
-          @mousedown="startDragSig"
-          @touchstart="startDragSig"
+          @mousedown.stop="startDragSig"
+          @touchstart.stop="startDragSig"
           @click.stop="selectSignature">
           
-          <div v-if="selectedSignature" class="position-absolute start-50 translate-middle-x" style="top: -35px;">
-            <button @click.stop="removeSignature" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 10px;">
+          <div v-if="selectedSignature" class="position-absolute start-50 translate-middle-x" style="top: -40px;">
+            <button @click.stop="removeSignature" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 11px;">
               DELETE
             </button>
           </div>
@@ -267,11 +268,9 @@ import { ref, nextTick, onMounted } from 'vue';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// --- Configuration ---
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 // --- State ---
-const mainContainer = ref(null);
 const pdfFile = ref(null);
 const pdfBytes = ref(null);
 const pdfCanvas = ref(null);
@@ -289,7 +288,7 @@ const selectedTextIndex = ref(null);
 const isDraggingText = ref(false);
 
 // Signature
-const isSigDropdownOpen = ref(false); // New Dropdown State
+const isSigDropdownOpen = ref(false);
 const showSignaturePad = ref(false);
 const showSavedSignatures = ref(false);
 const savedSignatures = ref([]);
@@ -323,7 +322,7 @@ const getClientPos = (e) => {
   };
 };
 
-// --- 1. File Upload & Responsive Rendering ---
+// --- 1. File Upload & Rendering ---
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -337,13 +336,12 @@ const renderPdf = async (buffer) => {
   const loadingTask = pdfjsLib.getDocument({ data: buffer });
   const pdf = await loadingTask.promise;
   const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 1.5 });
-
+  
   const screenWidth = window.innerWidth;
+  const baseViewport = page.getViewport({ scale: 1.0 });
   let finalScale = 1.5;
   if (screenWidth < 800) {
     const desiredWidth = screenWidth - 20; 
-    const baseViewport = page.getViewport({ scale: 1.0 });
     finalScale = desiredWidth / baseViewport.width;
   }
   
@@ -390,6 +388,22 @@ const selectText = (index) => {
   currentFontStyle.value = item.fontStyle;
 };
 
+// NEW: Duplicate Text Function
+const duplicateText = (index) => {
+  const original = textElements.value[index];
+  // Create a clean copy with a small offset
+  textElements.value.push({
+    x: original.x + 20,
+    y: original.y + 20,
+    text: original.text,
+    fontSize: original.fontSize,
+    fontWeight: original.fontWeight,
+    fontStyle: original.fontStyle
+  });
+  // Select the new one immediately
+  selectText(textElements.value.length - 1);
+};
+
 const adjustFontSize = (amount) => {
   let newSize = currentFontSize.value + amount;
   if (selectedTextIndex.value !== null) {
@@ -425,7 +439,9 @@ const toggleItalic = () => {
 };
 
 const startDragText = (e, index) => {
+  // .stop logic handled in template, but good practice here too
   if (e.type === 'touchstart') e.preventDefault();
+  
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
@@ -463,7 +479,7 @@ const removeText = (index) => {
   selectedTextIndex.value = null;
 };
 
-// --- 3. Signature Logic (Dropdown + Snappy) ---
+// --- 3. Signature Logic ---
 const toggleSigDropdown = () => {
   isSigDropdownOpen.value = !isSigDropdownOpen.value;
 };
@@ -549,7 +565,7 @@ const saveSignature = () => {
   savedSignatures.value.push(sigObject);
   localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
   
-  useSavedSignature(sigObject);
+  useSavedSignature(sigObject); // This overwrites the current signature
   closeSignaturePad();
 };
 
@@ -557,11 +573,15 @@ const useSavedSignature = (sigObject) => {
   const imgData = typeof sigObject === 'string' ? sigObject : sigObject.data;
   const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2);
   
+  // OVERRIDE LOGIC: Simply setting this replaces the old one because
+  // we are using a single `signatureImage` ref, not an array.
   signatureImage.value = imgData;
+  
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   showSavedSignatures.value = false;
   
+  // Center it on screen so user knows it changed/added
   sigPos.value = { x: 50, y: 100 };
   const baseWidth = 200;
   sigSize.value = { 
@@ -785,6 +805,11 @@ const downloadPdf = async () => {
 .element-wrapper.is-selected {
   border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
+}
+/* Ensure dragged item is above everything */
+.element-wrapper.is-dragging {
+  z-index: 9999 !important;
+  cursor: grabbing !important;
 }
 
 /* DYNAMIC INPUT STYLING */
