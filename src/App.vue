@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden d-flex flex-column font-sans">
+  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden d-flex flex-column font-sans app-container">
     
     <div class="animation-layer">
       <div class="cute-file walker"><div class="face">📄</div></div>
@@ -10,75 +10,77 @@
       </div>
     </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg" style="z-index: 20; backdrop-filter: blur(10px); background: rgba(50, 50, 50, 0.9) !important;">
-      <div class="container">
-        <span class="navbar-brand fw-bold d-flex align-items-center">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="backdrop-filter: blur(10px); background: rgba(50, 50, 50, 0.95) !important;">
+      <div class="container-fluid px-3">
+        <div class="d-flex justify-content-between w-100 align-items-center mb-2" v-if="pdfFile">
+             <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1rem;">
+              <span class="me-2">✨</span> PDF Editor
+            </span>
+             <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-md-none">
+              Save
+            </button>
+        </div>
+        <span class="navbar-brand fw-bold d-none d-md-flex align-items-center" v-else>
           <span class="me-2">✨</span> Vue PDF Editor
         </span>
         
-        <div class="d-flex gap-2 align-items-center" v-if="pdfFile">
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center w-100" v-if="pdfFile">
+          
           <button 
             @click="toggleTextMode" 
             :class="['btn btn-sm d-flex align-items-center gap-2', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
-            <span>{{ isTextMode ? 'Click PDF to Type' : 'Add Text' }}</span>
+            <span>{{ isTextMode ? 'Tap to Type' : 'Add Text' }}</span>
           </button>
           
-          <div class="d-flex align-items-center gap-2 bg-dark rounded-pill px-3 py-1 border border-secondary" v-if="isTextMode || selectedTextIndex !== null">
+          <div class="d-flex align-items-center gap-1 bg-dark rounded px-2 py-1 border border-secondary" v-if="isTextMode || selectedTextIndex !== null">
             <input 
               type="number" 
               v-model.number="currentFontSize" 
               min="8" max="72" 
               class="form-control form-control-sm bg-transparent text-white border-0 p-0 text-center" 
-              style="width: 40px;"
+              style="width: 35px;"
               @input="updateSelectedTextStyle"
-              title="Font Size"
             />
             <div class="vr bg-secondary mx-1"></div>
-            <select v-model="currentFontWeight" class="form-select form-select-sm bg-transparent text-white border-0 py-0" style="width: 80px;" @change="updateSelectedTextStyle">
-              <option value="normal" class="text-dark">Normal</option>
-              <option value="bold" class="text-dark">Bold</option>
-              <option value="lighter" class="text-dark">Light</option>
-            </select>
+            <button @click="toggleBold" class="btn btn-sm p-0 text-white" :class="{ 'text-info': currentFontWeight === 'bold' }">B</button>
             <div class="vr bg-secondary mx-1"></div>
-            <select v-model="currentFontStyle" class="form-select form-select-sm bg-transparent text-white border-0 py-0" style="width: 80px;" @change="updateSelectedTextStyle">
-              <option value="normal" class="text-dark">Normal</option>
-              <option value="italic" class="text-dark">Italic</option>
-            </select>
+            <button @click="toggleItalic" class="btn btn-sm p-0 text-white" :class="{ 'text-info': currentFontStyle === 'italic' }">I</button>
           </div>
           
           <div class="btn-group">
-            <button @click="showSignaturePad = true" class="btn btn-sm btn-warning">New Signature</button>
+            <button @click="showSignaturePad = true" class="btn btn-sm btn-warning">Sign</button>
             <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning">
-              📂 Saved ({{ savedSignatures.length }})
+              Saved ({{ savedSignatures.length }})
             </button>
           </div>
           
-          <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-4 shadow-sm">
-            Download
+          <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-4 shadow-sm d-none d-md-block">
+            Download PDF
           </button>
         </div>
       </div>
     </nav>
 
     <div 
-      class="container d-flex flex-column align-items-center position-relative" 
+      ref="mainContainer"
+      class="container-fluid d-flex flex-column align-items-center position-relative p-0" 
       :class="{ 'justify-content-center flex-grow-1': !pdfFile }"
       style="z-index: 10;">
       
-      <div v-if="!pdfFile" class="upload-box card bg-dark border-secondary text-center p-5 shadow-lg">
+      <div v-if="!pdfFile" class="upload-box card bg-dark border-secondary text-center p-4 shadow-lg mx-3" style="max-width: 500px;">
         <div class="card-body">
-          <div class="mb-4 display-1">📄</div>
-          <h4 class="card-title text-white mb-3">Upload Document</h4>
-          <p class="card-text text-secondary mb-4">Select a PDF file to begin editing</p>
-          <label class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm">
+          <div class="mb-3 display-1">📄</div>
+          <h4 class="card-title text-white mb-2">Upload Document</h4>
+          <p class="card-text text-secondary mb-4 small">Tap below to select a PDF</p>
+          <label class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm w-100">
             Choose File
             <input type="file" accept="application/pdf" @change="handleFileUpload" hidden />
           </label>
         </div>
       </div>
 
-      <div v-else class="pdf-container position-relative shadow-lg" @click.self="deselectAll">
-        <canvas ref="pdfCanvas" class="d-block"></canvas>
+      <div v-else class="pdf-wrapper shadow-lg" @click.self="deselectAll">
+        <canvas ref="pdfCanvas" class="d-block mx-auto"></canvas>
 
         <div 
           class="position-absolute top-0 start-0 w-100 h-100" 
@@ -96,16 +98,18 @@
             left: item.x + 'px', 
             top: item.y + 'px',
             zIndex: selectedTextIndex === index ? 1000 : 1,
+            touchAction: 'none'
           }"
           @mousedown="startDragText($event, index)"
+          @touchstart="startDragText($event, index)"
           @click.stop="selectText(index)">
           
           <div v-if="selectedTextIndex === index" class="floating-actions">
             <span class="drag-handle">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
             </span>
-            <button @click.stop="removeText(index)" class="action-btn delete" title="Remove">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button @click.stop="removeText(index)" class="action-btn delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
 
@@ -133,30 +137,32 @@
             top: sigPos.y + 'px', 
             width: sigSize.width + 'px',
             height: sigSize.height + 'px',
-            zIndex: selectedSignature ? 1000 : 1
+            zIndex: selectedSignature ? 1000 : 1,
+            touchAction: 'none'
           }"
           @mousedown="startDragSig"
+          @touchstart="startDragSig"
           @click.stop="selectSignature">
           
           <div v-if="selectedSignature" class="floating-actions">
             <span class="drag-handle">
-               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
             </span>
-            <button @click.stop="saveCurrentSigToStorage" class="action-btn save" title="Save to Library">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <button @click.stop="saveCurrentSigToStorage" class="action-btn save">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
             </button>
-            <button @click.stop="removeSignature" class="action-btn delete" title="Remove">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button @click.stop="removeSignature" class="action-btn delete">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             </button>
           </div>
 
           <img :src="signatureImage" class="w-100 h-100" style="pointer-events: none; user-select: none;" />
           
           <template v-if="selectedSignature">
-            <div class="resize-handle se" @mousedown.stop="startResize($event, 'se')"></div>
-            <div class="resize-handle ne" @mousedown.stop="startResize($event, 'ne')"></div>
-            <div class="resize-handle sw" @mousedown.stop="startResize($event, 'sw')"></div>
-            <div class="resize-handle nw" @mousedown.stop="startResize($event, 'nw')"></div>
+            <div class="resize-handle se" @mousedown.stop="startResize($event, 'se')" @touchstart.stop="startResize($event, 'se')"></div>
+            <div class="resize-handle ne" @mousedown.stop="startResize($event, 'ne')" @touchstart.stop="startResize($event, 'ne')"></div>
+            <div class="resize-handle sw" @mousedown.stop="startResize($event, 'sw')" @touchstart.stop="startResize($event, 'sw')"></div>
+            <div class="resize-handle nw" @mousedown.stop="startResize($event, 'nw')" @touchstart.stop="startResize($event, 'nw')"></div>
           </template>
         </div>
 
@@ -164,7 +170,7 @@
     </div>
 
     <div v-if="showSignaturePad" class="modal-overlay">
-      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 500px;">
+      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 95%; max-width: 500px;">
         <div class="card-header border-secondary d-flex justify-content-between align-items-center">
           <h5 class="mb-0">✍️ Draw Signature</h5>
           <button @click="closeSignaturePad" class="btn-close btn-close-white"></button>
@@ -173,7 +179,8 @@
           <canvas 
             ref="sigCanvas" 
             width="498" height="200" 
-            class="signature-pad-canvas"
+            class="signature-pad-canvas w-100"
+            style="touch-action: none;"
             @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing" @mouseleave="stopDrawing"
             @touchstart="startDrawing" @touchmove="draw" @touchend="stopDrawing">
           </canvas>
@@ -186,7 +193,7 @@
     </div>
 
     <div v-if="showSavedSignatures" class="modal-overlay" @click.self="showSavedSignatures = false">
-      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 400px; max-height: 80vh;">
+      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 90%; max-width: 400px; max-height: 80vh;">
         <div class="card-header border-secondary d-flex justify-content-between align-items-center">
           <h5 class="mb-0">📂 My Signatures</h5>
           <button @click="showSavedSignatures = false" class="btn-close btn-close-white"></button>
@@ -199,17 +206,17 @@
             <div 
               v-for="(sig, idx) in savedSignatures" 
               :key="idx" 
-              class="saved-sig-item bg-white rounded p-2 position-relative group-hover">
+              class="saved-sig-item bg-white rounded p-2 position-relative">
               <img 
                 :src="sig" 
                 class="img-fluid" 
-                style="height: 60px; object-fit: contain; cursor: pointer;"
+                style="height: 60px; object-fit: contain; cursor: pointer; display: block; margin: 0 auto;"
                 @click="useSavedSignature(sig)"
               />
               <button 
                 @click.stop="deleteSavedSignature(idx)" 
-                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 rounded-circle d-flex align-items-center justify-content-center"
-                style="width: 20px; height: 20px; font-size: 12px;">
+                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                style="width: 24px; height: 24px; font-size: 14px;">
                 ×
               </button>
             </div>
@@ -229,7 +236,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 // --- Configuration ---
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
-// --- State Management ---
+// --- State ---
+const mainContainer = ref(null);
 const pdfFile = ref(null);
 const pdfBytes = ref(null);
 const pdfCanvas = ref(null);
@@ -237,43 +245,50 @@ const isTextMode = ref(false);
 const textElements = ref([]);
 const scale = ref(1.5);
 
-// Typography Defaults
+// Typography
 const currentFontSize = ref(18);
 const currentFontWeight = ref('normal');
 const currentFontStyle = ref('normal');
 
-// Selection State
+// Selection
 const selectedTextIndex = ref(null);
 const isDraggingText = ref(false);
 
-// Signature State
+// Signature
 const showSignaturePad = ref(false);
 const showSavedSignatures = ref(false);
 const savedSignatures = ref([]);
 const sigCanvas = ref(null);
 const signatureImage = ref(null); 
-const sigPos = ref({ x: 100, y: 100 });
-const sigSize = ref({ width: 200, height: 100 });
+const sigPos = ref({ x: 50, y: 50 });
+const sigSize = ref({ width: 150, height: 75 });
 const selectedSignature = ref(false);
 const isDraggingSig = ref(false);
 const isResizingSig = ref(false);
 
-// Canvas Contexts
+// Drawing State
 let isDrawing = false;
+let points = [];
+let canvasRect = null;
 let ctx = null;
 let startPos = { x: 0, y: 0 };
 let startSize = { width: 0, height: 0 };
 let resizeDirection = '';
 
-// --- Lifecycle ---
 onMounted(() => {
   const stored = localStorage.getItem('my_signatures');
-  if (stored) {
-    savedSignatures.value = JSON.parse(stored);
-  }
+  if (stored) savedSignatures.value = JSON.parse(stored);
 });
 
-// --- 1. File Upload & Rendering ---
+// --- HELPER: Get Client Coordinates (Touch/Mouse) ---
+const getClientPos = (e) => {
+  return {
+    x: e.clientX || e.touches?.[0]?.clientX,
+    y: e.clientY || e.touches?.[0]?.clientY
+  };
+};
+
+// --- 1. File Upload & Responsive Rendering ---
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -287,12 +302,28 @@ const renderPdf = async (buffer) => {
   const loadingTask = pdfjsLib.getDocument({ data: buffer });
   const pdf = await loadingTask.promise;
   const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: scale.value });
+  const viewport = page.getViewport({ scale: 1.5 }); // Base viewport
+
+  // Responsive Scaling Logic
+  const screenWidth = window.innerWidth;
+  let finalScale = 1.5;
+  
+  // If mobile, scale to fit width (minus padding)
+  if (screenWidth < 800) {
+    const desiredWidth = screenWidth - 20; 
+    const baseViewport = page.getViewport({ scale: 1.0 });
+    finalScale = desiredWidth / baseViewport.width;
+  }
+  
+  scale.value = finalScale;
+  const finalViewport = page.getViewport({ scale: finalScale });
+
   const canvas = pdfCanvas.value;
   const context = canvas.getContext('2d');
-  canvas.height = viewport.height;
-  canvas.width = viewport.width;
-  await page.render({ canvasContext: context, viewport: viewport }).promise;
+  canvas.height = finalViewport.height;
+  canvas.width = finalViewport.width;
+  
+  await page.render({ canvasContext: context, viewport: finalViewport }).promise;
 };
 
 // --- 2. Text Logic ---
@@ -301,12 +332,24 @@ const toggleTextMode = () => {
   if (isTextMode.value) deselectAll();
 };
 
+const toggleBold = () => {
+  currentFontWeight.value = currentFontWeight.value === 'bold' ? 'normal' : 'bold';
+  updateSelectedTextStyle();
+};
+
+const toggleItalic = () => {
+  currentFontStyle.value = currentFontStyle.value === 'italic' ? 'normal' : 'italic';
+  updateSelectedTextStyle();
+};
+
 const handleCanvasClick = (e) => {
   if (!isTextMode.value) return;
   const rect = pdfCanvas.value.getBoundingClientRect();
+  const clientPos = getClientPos(e);
+  
   textElements.value.push({ 
-    x: e.clientX - rect.left, 
-    y: e.clientY - rect.top, 
+    x: clientPos.x - rect.left, 
+    y: clientPos.y - rect.top, 
     text: '',
     fontSize: currentFontSize.value,
     fontWeight: currentFontWeight.value,
@@ -335,30 +378,38 @@ const updateSelectedTextStyle = () => {
 };
 
 const startDragText = (e, index) => {
-  // Only start drag if clicking the text itself or the handle, not the input text
-  // However, for simplicity, we allow drag on mousedown of container
+  // Prevent default only if it's touch to stop scrolling
+  if (e.type === 'touchstart') e.preventDefault();
+  
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
   
-  const startX = e.clientX;
-  const startY = e.clientY;
+  const pos = getClientPos(e);
+  const startX = pos.x;
+  const startY = pos.y;
   const startLeft = textElements.value[index].x;
   const startTop = textElements.value[index].y;
 
-  const onMouseMove = (moveEvent) => {
-    textElements.value[index].x = startLeft + (moveEvent.clientX - startX);
-    textElements.value[index].y = startTop + (moveEvent.clientY - startY);
+  const onMove = (moveEvent) => {
+    if (moveEvent.type === 'touchmove') moveEvent.preventDefault();
+    const movePos = getClientPos(moveEvent);
+    textElements.value[index].x = startLeft + (movePos.x - startX);
+    textElements.value[index].y = startTop + (movePos.y - startY);
   };
   
-  const onMouseUp = () => {
+  const onEnd = () => {
     isDraggingText.value = false;
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onEnd);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchend', onEnd);
   };
 
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
 };
 
 const removeText = (index) => {
@@ -366,39 +417,86 @@ const removeText = (index) => {
   selectedTextIndex.value = null;
 };
 
-// --- 3. Signature Logic ---
+// --- 3. Optimized Signature Logic (Smooth & Touch) ---
 const startDrawing = (e) => {
-  e.preventDefault();
+  e.preventDefault(); // Stop scrolling
   isDrawing = true;
-  ctx = sigCanvas.value.getContext('2d');
+  points = [];
+  
+  const canvas = sigCanvas.value;
+  ctx = canvas.getContext('2d');
+  
+  // DPI Scaling for sharpness on mobile
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== canvas.offsetWidth * dpr) {
+    canvas.width = canvas.offsetWidth * dpr;
+    canvas.height = canvas.offsetHeight * dpr;
+    ctx.scale(dpr, dpr);
+  }
+
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = '#000';
-  const rect = sigCanvas.value.getBoundingClientRect();
-  const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-  const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
+  ctx.shadowBlur = 1;
+  ctx.shadowColor = '#000';
+
+  canvasRect = canvas.getBoundingClientRect();
+  
+  const { x, y } = getDrawPos(e);
+  points.push({ x, y });
+  
   ctx.beginPath();
   ctx.moveTo(x, y);
 };
 
 const draw = (e) => {
   if (!isDrawing) return;
-  e.preventDefault();
-  const rect = sigCanvas.value.getBoundingClientRect();
-  const x = (e.clientX || e.touches?.[0]?.clientX) - rect.left;
-  const y = (e.clientY || e.touches?.[0]?.clientY) - rect.top;
-  ctx.lineTo(x, y);
-  ctx.stroke();
+  e.preventDefault(); 
+  
+  const { x, y } = getDrawPos(e);
+  points.push({ x, y });
+
+  // Quadratic Curve Smoothing
+  if (points.length > 2) {
+    const lastPoint = points[points.length - 2];
+    const p1 = points[points.length - 3];
+    const midPoint = {
+      x: (lastPoint.x + p1.x) / 2,
+      y: (lastPoint.y + p1.y) / 2
+    };
+
+    ctx.beginPath();
+    ctx.moveTo(midPoint.x, midPoint.y);
+    ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
 };
 
 const stopDrawing = () => { 
-  isDrawing = false; 
-  if (ctx) ctx.beginPath(); 
+  if (!isDrawing) return;
+  isDrawing = false;
+  if (points.length > 0) ctx.stroke();
+  points = [];
+};
+
+const getDrawPos = (e) => {
+  const pos = getClientPos(e);
+  return {
+    x: pos.x - canvasRect.left,
+    y: pos.y - canvasRect.top
+  };
 };
 
 const clearSignature = () => {
   const canvas = sigCanvas.value;
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  const context = canvas.getContext('2d');
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.restore();
 };
 
 const closeSignaturePad = () => {
@@ -408,10 +506,16 @@ const closeSignaturePad = () => {
 
 const saveSignature = () => {
   const canvas = sigCanvas.value;
-  // Simple check for empty canvas could be added here
-  const dataUrl = canvas.toDataURL('image/png');
+  // Simple empty check
+  const pixelBuffer = new Uint32Array(
+    canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.buffer
+  );
+  if (!pixelBuffer.some(color => color !== 0)) {
+     alert('Please draw a signature first');
+     return;
+  }
   
-  // Save to storage
+  const dataUrl = canvas.toDataURL('image/png');
   savedSignatures.value.push(dataUrl);
   localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
   
@@ -424,16 +528,15 @@ const useSavedSignature = (dataUrl) => {
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   showSavedSignatures.value = false;
-  // Reset pos for new signature
-  sigPos.value = { x: 100, y: 100 };
-  sigSize.value = { width: 200, height: 100 };
+  // Reset pos centered on current view usually, but fixed for now
+  sigPos.value = { x: 50, y: 50 };
+  sigSize.value = { width: 150, height: 75 };
 };
 
 const saveCurrentSigToStorage = () => {
   if (signatureImage.value && !savedSignatures.value.includes(signatureImage.value)) {
     savedSignatures.value.push(signatureImage.value);
     localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
-    alert('Signature saved to library!');
   }
 };
 
@@ -453,72 +556,84 @@ const removeSignature = () => {
   selectedSignature.value = false;
 };
 
-// Drag Signature
+// Drag Signature (Touch Enabled)
 const startDragSig = (e) => {
   if (isResizingSig.value) return;
-  e.preventDefault();
+  if (e.type === 'touchstart') e.preventDefault();
+  
   isDraggingSig.value = true;
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   
-  const startX = e.clientX;
-  const startY = e.clientY;
+  const pos = getClientPos(e);
+  const startX = pos.x;
+  const startY = pos.y;
   const startLeft = sigPos.value.x;
   const startTop = sigPos.value.y;
 
-  const onMouseMove = (moveEvent) => {
-    sigPos.value.x = startLeft + (moveEvent.clientX - startX);
-    sigPos.value.y = startTop + (moveEvent.clientY - startY);
+  const onMove = (moveEvent) => {
+    if (moveEvent.type === 'touchmove') moveEvent.preventDefault();
+    const movePos = getClientPos(moveEvent);
+    sigPos.value.x = startLeft + (movePos.x - startX);
+    sigPos.value.y = startTop + (movePos.y - startY);
   };
   
-  const onMouseUp = () => {
+  const onEnd = () => {
     isDraggingSig.value = false;
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onEnd);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchend', onEnd);
   };
 
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
 };
 
-// Resize Signature
+// Resize Signature (Touch Enabled)
 const startResize = (e, direction) => {
-  e.preventDefault();
+  e.preventDefault(); 
   e.stopPropagation();
   isResizingSig.value = true;
   resizeDirection = direction;
-  startPos.x = e.clientX;
-  startPos.y = e.clientY;
+  
+  const pos = getClientPos(e);
+  startPos.x = pos.x;
+  startPos.y = pos.y;
   startSize.width = sigSize.value.width;
   startSize.height = sigSize.value.height;
   const startPosX = sigPos.value.x;
   const startPosY = sigPos.value.y;
 
-  const onMouseMove = (moveEvent) => {
-    const deltaX = moveEvent.clientX - startPos.x;
-    const deltaY = moveEvent.clientY - startPos.y;
+  const onMove = (moveEvent) => {
+    if (moveEvent.type === 'touchmove') moveEvent.preventDefault();
+    const movePos = getClientPos(moveEvent);
+    const deltaX = movePos.x - startPos.x;
     const aspectRatio = startSize.width / startSize.height;
     
-    // Simple resizing logic (preserving aspect ratio roughly)
     if (direction.includes('e')) sigSize.value.width = Math.max(50, startSize.width + deltaX);
     if (direction.includes('w')) {
       sigSize.value.width = Math.max(50, startSize.width - deltaX);
       sigPos.value.x = startPosX + (startSize.width - sigSize.value.width);
     }
     sigSize.value.height = sigSize.value.width / aspectRatio;
-    
-    // Vertical adjustments
     if (direction.includes('n')) sigPos.value.y = startPosY + (startSize.height - sigSize.value.height);
   };
   
-  const onMouseUp = () => {
+  const onEnd = () => {
     isResizingSig.value = false;
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onEnd);
+    window.removeEventListener('touchmove', onMove);
+    window.removeEventListener('touchend', onEnd);
   };
 
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('touchend', onEnd);
 };
 
 const deselectAll = () => {
@@ -547,7 +662,7 @@ const downloadPdf = async () => {
         
         firstPage.drawText(item.text, {
           x: item.x / scale.value,
-          y: height - (item.y / scale.value) - (item.fontSize / scale.value * 0.8), // Adjusted baseline
+          y: height - (item.y / scale.value) - (item.fontSize / scale.value * 0.8),
           size: item.fontSize / scale.value,
           font: font,
           color: rgb(0, 0, 0),
@@ -580,28 +695,31 @@ const downloadPdf = async () => {
 </script>
 
 <style scoped>
-/* GENERAL UTILS */
-.pdf-container {
-  background-color: #525659;
-  border: 1px solid #444;
+/* APP CONTAINER */
+.app-container {
+  touch-action: pan-y; /* Allow vertical scroll on body, but handle specifics in JS */
 }
 
-/* UPLOAD BOX STYLES */
+/* PDF WRAPPER */
+.pdf-wrapper {
+  background-color: #525659;
+  border: 1px solid #444;
+  position: relative;
+  overflow: hidden; /* Contains the dragging elements */
+}
+
+/* UPLOAD BOX */
 .upload-box {
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s;
   border-style: dashed !important;
   border-width: 2px;
 }
-.upload-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
-  border-color: #0d6efd !important;
-}
+.upload-box:active { transform: scale(0.98); }
 
 /* ANIMATIONS */
 .animation-layer {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 0; opacity: 0.3;
+  pointer-events: none; z-index: 0; opacity: 0.2;
 }
 .cute-file { position: absolute; font-size: 3rem; user-select: none; }
 .walker { animation: roam 25s linear infinite; }
@@ -613,129 +731,80 @@ const downloadPdf = async () => {
 
 @keyframes roam {
   0% { left: 10%; top: 10%; transform: rotate(0deg); }
-  30% { left: 80%; top: 30%; transform: rotate(10deg); }
-  60% { left: 20%; top: 80%; transform: rotate(-5deg); }
+  50% { left: 80%; top: 80%; transform: rotate(10deg); }
   100% { left: 10%; top: 10%; transform: rotate(0deg); }
 }
 @keyframes fightLeft { 0% { transform: translateX(0) rotate(-10deg); } 100% { transform: translateX(20px) rotate(10deg); } }
 @keyframes fightRight { 0% { transform: translateX(0) rotate(10deg); } 100% { transform: translateX(-20px) rotate(-10deg); } }
 @keyframes spark { 0% { opacity: 0; scale: 1; } 50% { opacity: 1; scale: 1.5; } 100% { opacity: 0; scale: 1; } }
 
-/* ELEMENT WRAPPERS (Text & Signature) */
+/* INTERACTIVE ELEMENTS */
 .element-wrapper {
   position: absolute;
-  cursor: grab;
-  /* Invisible border by default to reserve space */
-  border: 2px solid transparent; 
-  transition: border-color 0.2s;
-}
-
-.element-wrapper:active {
-  cursor: grabbing;
+  /* border: 2px solid transparent; */
+  transition: border-color 0.1s;
 }
 
 .element-wrapper.is-selected {
-  border: 2px dashed #0d6efd;
+  border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
 }
 
-/* FLOATING ACTION BAR */
+/* ACTIONS BAR */
 .floating-actions {
   position: absolute;
-  top: -35px;
+  top: -40px;
   left: 50%;
   transform: translateX(-50%);
-  background: #333;
-  color: white;
+  background: #222;
   border-radius: 8px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  z-index: 1050;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 2000;
   white-space: nowrap;
 }
-
-/* Little triangle pointing down */
 .floating-actions::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid #333;
+  content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #222;
 }
 
 .action-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  padding: 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
+  background: none; border: none; color: #fff;
+  padding: 5px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
 }
+.action-btn.delete { color: #ff6b6b; }
+.action-btn.save { color: #51cf66; }
+.drag-handle { color: #aaa; padding-right: 8px; border-right: 1px solid #444; }
 
-.action-btn:hover { background: rgba(255,255,255,0.2); }
-.action-btn.delete:hover { background: #dc3545; }
-.action-btn.save:hover { background: #198754; }
-
-.drag-handle {
-  cursor: grab;
-  color: #aaa;
-  padding: 0 4px;
-  border-right: 1px solid #555;
-  display: flex;
-  align-items: center;
-}
-
-/* INPUT STYLING */
 .bare-input {
-  background: transparent;
-  border: none;
-  color: #000;
-  padding: 4px;
-  outline: none;
-  width: 100%;
+  background: transparent; border: none; color: #000;
+  padding: 4px; outline: none; width: 100%;
 }
 
-/* RESIZE HANDLES */
+/* RESIZE HANDLES - Bigger touch targets */
 .resize-handle {
-  position: absolute;
-  width: 10px; height: 10px;
-  background: white;
-  border: 1px solid #0d6efd;
-  border-radius: 50%;
-  z-index: 1001;
+  position: absolute; width: 16px; height: 16px;
+  background: white; border: 2px solid #0d6efd; border-radius: 50%; z-index: 1001;
 }
-.resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
-.resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
-.resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
-.resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
+.resize-handle.se { bottom: -8px; right: -8px; }
+.resize-handle.sw { bottom: -8px; left: -8px; }
+.resize-handle.ne { top: -8px; right: -8px; }
+.resize-handle.nw { top: -8px; left: -8px; }
 
-/* MODAL OVERLAY */
+/* MODALS */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.8);
   display: flex; justify-content: center; align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(2px);
+  z-index: 3000;
+  backdrop-filter: blur(3px);
 }
+.signature-pad-canvas { background: #fff; border-radius: 4px; }
 
-.signature-pad-canvas { cursor: crosshair; background: #fff; }
-
-.saved-sig-item {
-  border: 1px solid #dee2e6;
-  transition: border-color 0.2s, transform 0.2s;
-}
-.saved-sig-item:hover {
-  border-color: #0d6efd;
-  transform: scale(1.02);
-}
+.saved-sig-item { border: 1px solid #dee2e6; }
+.saved-sig-item:active { background-color: #f8f9fa !important; }
 </style>
