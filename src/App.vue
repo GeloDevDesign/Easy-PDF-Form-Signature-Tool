@@ -1,16 +1,7 @@
 <template>
-  <div class="bg-dark min-vh-100 text-white pb-5 position-relative overflow-hidden d-flex flex-column font-sans app-container">
+  <div class="bg-dark min-vh-100 text-white pb-5 position-relative d-flex flex-column font-sans app-container">
     
-    <div class="animation-layer">
-      <div class="cute-file walker"><div class="face">📄</div></div>
-      <div class="fight-scene">
-        <div class="cute-file fighter fighter-1">📝</div>
-        <div class="vs-spark">💥</div>
-        <div class="cute-file fighter fighter-2">📉</div>
-      </div>
-    </div>
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="backdrop-filter: blur(10px); background: rgba(50, 50, 50, 0.95) !important;">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="background: #333 !important;">
       <div class="container-fluid px-3">
         <div class="d-flex justify-content-between w-100 align-items-center mb-2" v-if="pdfFile">
              <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1rem;">
@@ -48,7 +39,7 @@
           </div>
           
           <div class="btn-group">
-            <button @click="showSignaturePad = true" class="btn btn-sm btn-warning">Sign</button>
+            <button @click="openSignaturePad" class="btn btn-sm btn-warning">Sign</button>
             <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning">
               Saved ({{ savedSignatures.length }})
             </button>
@@ -105,12 +96,8 @@
           @click.stop="selectText(index)">
           
           <div v-if="selectedTextIndex === index" class="floating-actions">
-            <span class="drag-handle">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
-            </span>
-            <button @click.stop="removeText(index)" class="action-btn delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
+            <span class="drag-handle">Move</span>
+            <button @click.stop="removeText(index)" class="action-btn delete">Delete</button>
           </div>
 
           <input 
@@ -145,15 +132,9 @@
           @click.stop="selectSignature">
           
           <div v-if="selectedSignature" class="floating-actions">
-            <span class="drag-handle">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M19 9l3 3-3 3M15 19l-3 3-3-3M9 9h6v6H9z"/></svg>
-            </span>
-            <button @click.stop="saveCurrentSigToStorage" class="action-btn save">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-            </button>
-            <button @click.stop="removeSignature" class="action-btn delete">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
+            <span class="drag-handle">Move</span>
+            <button @click.stop="saveCurrentSigToStorage" class="action-btn save">Save</button>
+            <button @click.stop="removeSignature" class="action-btn delete">Delete</button>
           </div>
 
           <img :src="signatureImage" class="w-100 h-100" style="pointer-events: none; user-select: none;" />
@@ -175,19 +156,20 @@
           <h5 class="mb-0">✍️ Draw Signature</h5>
           <button @click="closeSignaturePad" class="btn-close btn-close-white"></button>
         </div>
-        <div class="card-body bg-white text-center p-0 position-relative">
+        
+        <div class="card-body bg-white text-center p-0 position-relative" style="height: 200px;" ref="sigPadContainer">
           <canvas 
             ref="sigCanvas" 
-            width="498" height="200" 
-            class="signature-pad-canvas w-100"
-            style="touch-action: none;"
+            class="d-block w-100 h-100"
+            style="touch-action: none; cursor: crosshair;"
             @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing" @mouseleave="stopDrawing"
             @touchstart="startDrawing" @touchmove="draw" @touchend="stopDrawing">
           </canvas>
         </div>
+        
         <div class="card-footer border-secondary d-flex justify-content-between">
           <button @click="clearSignature" class="btn btn-outline-light btn-sm">Clear</button>
-          <button @click="saveSignature" class="btn btn-primary btn-sm px-4">Use & Save</button>
+          <button @click="saveSignature" class="btn btn-primary btn-sm px-4">Use Signature</button>
         </div>
       </div>
     </div>
@@ -208,7 +190,7 @@
               :key="idx" 
               class="saved-sig-item bg-white rounded p-2 position-relative">
               <img 
-                :src="sig" 
+                :src="sig.data" 
                 class="img-fluid" 
                 style="height: 60px; object-fit: contain; cursor: pointer; display: block; margin: 0 auto;"
                 @click="useSavedSignature(sig)"
@@ -229,7 +211,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, nextTick, onMounted } from 'vue';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 
@@ -259,6 +241,7 @@ const showSignaturePad = ref(false);
 const showSavedSignatures = ref(false);
 const savedSignatures = ref([]);
 const sigCanvas = ref(null);
+const sigPadContainer = ref(null);
 const signatureImage = ref(null); 
 const sigPos = ref({ x: 50, y: 50 });
 const sigSize = ref({ width: 150, height: 75 });
@@ -268,7 +251,6 @@ const isResizingSig = ref(false);
 
 // Drawing State
 let isDrawing = false;
-let points = [];
 let canvasRect = null;
 let ctx = null;
 let startPos = { x: 0, y: 0 };
@@ -280,7 +262,7 @@ onMounted(() => {
   if (stored) savedSignatures.value = JSON.parse(stored);
 });
 
-// --- HELPER: Get Client Coordinates (Touch/Mouse) ---
+// --- HELPER: Get Client Coordinates ---
 const getClientPos = (e) => {
   return {
     x: e.clientX || e.touches?.[0]?.clientX,
@@ -307,8 +289,6 @@ const renderPdf = async (buffer) => {
   // Responsive Scaling Logic
   const screenWidth = window.innerWidth;
   let finalScale = 1.5;
-  
-  // If mobile, scale to fit width (minus padding)
   if (screenWidth < 800) {
     const desiredWidth = screenWidth - 20; 
     const baseViewport = page.getViewport({ scale: 1.0 });
@@ -378,9 +358,7 @@ const updateSelectedTextStyle = () => {
 };
 
 const startDragText = (e, index) => {
-  // Prevent default only if it's touch to stop scrolling
   if (e.type === 'touchstart') e.preventDefault();
-  
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
@@ -417,35 +395,36 @@ const removeText = (index) => {
   selectedTextIndex.value = null;
 };
 
-// --- 3. Optimized Signature Logic (Smooth & Touch) ---
+// --- 3. Optimized Snappy Signature Logic ---
+
+const openSignaturePad = async () => {
+  showSignaturePad.value = true;
+  // Wait for modal to render to size canvas correctly
+  await nextTick();
+  if (sigCanvas.value && sigPadContainer.value) {
+    // 1:1 Pixel Mapping for sharp, non-distorted drawing
+    sigCanvas.value.width = sigPadContainer.value.offsetWidth;
+    sigCanvas.value.height = sigPadContainer.value.offsetHeight;
+    clearSignature(); // ensure clean state
+  }
+};
+
 const startDrawing = (e) => {
-  e.preventDefault(); // Stop scrolling
+  e.preventDefault(); 
   isDrawing = true;
-  points = [];
-  
   const canvas = sigCanvas.value;
   ctx = canvas.getContext('2d');
   
-  // DPI Scaling for sharpness on mobile
-  const dpr = window.devicePixelRatio || 1;
-  if (canvas.width !== canvas.offsetWidth * dpr) {
-    canvas.width = canvas.offsetWidth * dpr;
-    canvas.height = canvas.offsetHeight * dpr;
-    ctx.scale(dpr, dpr);
-  }
-
+  // RAW SETTINGS FOR SNAPPY FEEL
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = '#000';
-  ctx.shadowBlur = 1;
-  ctx.shadowColor = '#000';
-
+  
+  // Cache rect once
   canvasRect = canvas.getBoundingClientRect();
   
   const { x, y } = getDrawPos(e);
-  points.push({ x, y });
-  
   ctx.beginPath();
   ctx.moveTo(x, y);
 };
@@ -453,37 +432,22 @@ const startDrawing = (e) => {
 const draw = (e) => {
   if (!isDrawing) return;
   e.preventDefault(); 
-  
   const { x, y } = getDrawPos(e);
-  points.push({ x, y });
-
-  // Quadratic Curve Smoothing
-  if (points.length > 2) {
-    const lastPoint = points[points.length - 2];
-    const p1 = points[points.length - 3];
-    const midPoint = {
-      x: (lastPoint.x + p1.x) / 2,
-      y: (lastPoint.y + p1.y) / 2
-    };
-
-    ctx.beginPath();
-    ctx.moveTo(midPoint.x, midPoint.y);
-    ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, x, y);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  }
+  
+  // DIRECT DRAWING - No Smoothing, Instant Feedback
+  ctx.lineTo(x, y);
+  ctx.stroke();
 };
 
 const stopDrawing = () => { 
   if (!isDrawing) return;
   isDrawing = false;
-  if (points.length > 0) ctx.stroke();
-  points = [];
+  ctx.closePath();
 };
 
 const getDrawPos = (e) => {
   const pos = getClientPos(e);
+  // Simple subtraction is fastest
   return {
     x: pos.x - canvasRect.left,
     y: pos.y - canvasRect.top
@@ -491,22 +455,18 @@ const getDrawPos = (e) => {
 };
 
 const clearSignature = () => {
-  const canvas = sigCanvas.value;
-  const context = canvas.getContext('2d');
-  context.save();
-  context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.restore();
+  if (!sigCanvas.value) return;
+  const ctx = sigCanvas.value.getContext('2d');
+  ctx.clearRect(0, 0, sigCanvas.value.width, sigCanvas.value.height);
 };
 
 const closeSignaturePad = () => {
   showSignaturePad.value = false;
-  clearSignature();
 };
 
 const saveSignature = () => {
   const canvas = sigCanvas.value;
-  // Simple empty check
+  // Empty check
   const pixelBuffer = new Uint32Array(
     canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.buffer
   );
@@ -516,28 +476,41 @@ const saveSignature = () => {
   }
   
   const dataUrl = canvas.toDataURL('image/png');
-  savedSignatures.value.push(dataUrl);
+  // Save ASPECT RATIO info so it's not squished later
+  const ratio = canvas.width / canvas.height;
+  
+  const sigObject = { data: dataUrl, ratio: ratio };
+  savedSignatures.value.push(sigObject);
   localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
   
-  useSavedSignature(dataUrl);
+  useSavedSignature(sigObject);
   closeSignaturePad();
 };
 
-const useSavedSignature = (dataUrl) => {
-  signatureImage.value = dataUrl;
+const useSavedSignature = (sigObject) => {
+  // Handle old string format vs new object format
+  const imgData = typeof sigObject === 'string' ? sigObject : sigObject.data;
+  const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2); // Default to 2:1 if unknown
+  
+  signatureImage.value = imgData;
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   showSavedSignatures.value = false;
-  // Reset pos centered on current view usually, but fixed for now
-  sigPos.value = { x: 50, y: 50 };
-  sigSize.value = { width: 150, height: 75 };
+  
+  // RESET POSITION
+  sigPos.value = { x: 50, y: 100 };
+  
+  // SET CORRECT ASPECT RATIO SIZE
+  const baseWidth = 200;
+  sigSize.value = { 
+    width: baseWidth, 
+    height: baseWidth / ratio 
+  };
 };
 
 const saveCurrentSigToStorage = () => {
-  if (signatureImage.value && !savedSignatures.value.includes(signatureImage.value)) {
-    savedSignatures.value.push(signatureImage.value);
-    localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
-  }
+  // Re-save logic if needed (simplified here)
+  alert('Signature already in library');
 };
 
 const deleteSavedSignature = (index) => {
@@ -556,7 +529,7 @@ const removeSignature = () => {
   selectedSignature.value = false;
 };
 
-// Drag Signature (Touch Enabled)
+// Drag Signature
 const startDragSig = (e) => {
   if (isResizingSig.value) return;
   if (e.type === 'touchstart') e.preventDefault();
@@ -592,7 +565,7 @@ const startDragSig = (e) => {
   window.addEventListener('touchend', onEnd);
 };
 
-// Resize Signature (Touch Enabled)
+// Resize Signature (Maintains Ratio if dragged diagonally)
 const startResize = (e, direction) => {
   e.preventDefault(); 
   e.stopPropagation();
@@ -611,15 +584,25 @@ const startResize = (e, direction) => {
     if (moveEvent.type === 'touchmove') moveEvent.preventDefault();
     const movePos = getClientPos(moveEvent);
     const deltaX = movePos.x - startPos.x;
-    const aspectRatio = startSize.width / startSize.height;
     
-    if (direction.includes('e')) sigSize.value.width = Math.max(50, startSize.width + deltaX);
-    if (direction.includes('w')) {
-      sigSize.value.width = Math.max(50, startSize.width - deltaX);
-      sigPos.value.x = startPosX + (startSize.width - sigSize.value.width);
+    // Maintain Aspect Ratio during resize
+    const ratio = startSize.width / startSize.height;
+    
+    if (direction.includes('e')) {
+      const newWidth = Math.max(50, startSize.width + deltaX);
+      sigSize.value.width = newWidth;
+      sigSize.value.height = newWidth / ratio;
     }
-    sigSize.value.height = sigSize.value.width / aspectRatio;
-    if (direction.includes('n')) sigPos.value.y = startPosY + (startSize.height - sigSize.value.height);
+    if (direction.includes('w')) {
+      const newWidth = Math.max(50, startSize.width - deltaX);
+      sigSize.value.width = newWidth;
+      sigSize.value.height = newWidth / ratio;
+      sigPos.value.x = startPosX + (startSize.width - newWidth);
+    }
+    // Only adjust Y if needed based on calculated height
+    if (direction.includes('n')) {
+      sigPos.value.y = startPosY + (startSize.height - sigSize.value.height);
+    }
   };
   
   const onEnd = () => {
@@ -696,16 +679,14 @@ const downloadPdf = async () => {
 
 <style scoped>
 /* APP CONTAINER */
-.app-container {
-  touch-action: pan-y; /* Allow vertical scroll on body, but handle specifics in JS */
-}
+.app-container { touch-action: pan-y; }
 
 /* PDF WRAPPER */
 .pdf-wrapper {
   background-color: #525659;
   border: 1px solid #444;
   position: relative;
-  overflow: hidden; /* Contains the dragging elements */
+  overflow: hidden;
 }
 
 /* UPLOAD BOX */
@@ -716,35 +697,11 @@ const downloadPdf = async () => {
 }
 .upload-box:active { transform: scale(0.98); }
 
-/* ANIMATIONS */
-.animation-layer {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 0; opacity: 0.2;
-}
-.cute-file { position: absolute; font-size: 3rem; user-select: none; }
-.walker { animation: roam 25s linear infinite; }
-.fight-scene { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 100px; }
-.fighter { transition: transform 0.1s; }
-.fighter-1 { left: 0; animation: fightLeft 1s infinite alternate; }
-.fighter-2 { right: 0; animation: fightRight 1s infinite alternate; }
-.vs-spark { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 2rem; animation: spark 0.5s infinite; }
-
-@keyframes roam {
-  0% { left: 10%; top: 10%; transform: rotate(0deg); }
-  50% { left: 80%; top: 80%; transform: rotate(10deg); }
-  100% { left: 10%; top: 10%; transform: rotate(0deg); }
-}
-@keyframes fightLeft { 0% { transform: translateX(0) rotate(-10deg); } 100% { transform: translateX(20px) rotate(10deg); } }
-@keyframes fightRight { 0% { transform: translateX(0) rotate(10deg); } 100% { transform: translateX(-20px) rotate(-10deg); } }
-@keyframes spark { 0% { opacity: 0; scale: 1; } 50% { opacity: 1; scale: 1.5; } 100% { opacity: 0; scale: 1; } }
-
 /* INTERACTIVE ELEMENTS */
 .element-wrapper {
   position: absolute;
-  /* border: 2px solid transparent; */
   transition: border-color 0.1s;
 }
-
 .element-wrapper.is-selected {
   border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
@@ -772,20 +729,19 @@ const downloadPdf = async () => {
 }
 
 .action-btn {
-  background: none; border: none; color: #fff;
-  padding: 5px; border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; color: #fff; font-size: 14px;
+  padding: 4px 8px; border-radius: 4px; font-weight: 500;
 }
 .action-btn.delete { color: #ff6b6b; }
 .action-btn.save { color: #51cf66; }
-.drag-handle { color: #aaa; padding-right: 8px; border-right: 1px solid #444; }
+.drag-handle { color: #aaa; padding-right: 8px; border-right: 1px solid #444; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 
 .bare-input {
   background: transparent; border: none; color: #000;
   padding: 4px; outline: none; width: 100%;
 }
 
-/* RESIZE HANDLES - Bigger touch targets */
+/* RESIZE HANDLES */
 .resize-handle {
   position: absolute; width: 16px; height: 16px;
   background: white; border: 2px solid #0d6efd; border-radius: 50%; z-index: 1001;
@@ -798,13 +754,11 @@ const downloadPdf = async () => {
 /* MODALS */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.85);
   display: flex; justify-content: center; align-items: center;
   z-index: 3000;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(2px);
 }
-.signature-pad-canvas { background: #fff; border-radius: 4px; }
-
 .saved-sig-item { border: 1px solid #dee2e6; }
 .saved-sig-item:active { background-color: #f8f9fa !important; }
 </style>
