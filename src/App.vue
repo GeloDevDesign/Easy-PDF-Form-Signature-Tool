@@ -1,53 +1,71 @@
 <template>
   <div class="bg-dark min-vh-100 text-white pb-5 position-relative d-flex flex-column font-sans app-container">
     
-    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="background: #2b2b2b !important;">
-      <div class="container-fluid px-3">
-        <div class="d-flex justify-content-between w-100 align-items-center mb-2" v-if="pdfFile">
-             <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1rem;">
-              <span class="me-2">✨</span> PDF Editor
-            </span>
-             <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-md-none">
-              Save
-            </button>
-        </div>
-        <span class="navbar-brand fw-bold d-none d-md-flex align-items-center" v-else>
-          <span class="me-2">✨</span> Vue PDF Editor
-        </span>
+    <nav class="navbar navbar-expand-lg sticky-top p-3" style="background: transparent; pointer-events: none;">
+      <div class="container-fluid shadow-lg rounded-pill px-4 py-2 d-flex align-items-center justify-content-between" 
+           style="background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); border: 1px solid #444; pointer-events: auto; max-width: 1200px; margin: 0 auto;">
         
-        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center w-100" v-if="pdfFile">
-          
-          <button 
-            @click="toggleTextMode" 
-            :class="['btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
-            <span>{{ isTextMode ? 'Tap PDF to Type' : 'Add Text' }}</span>
-          </button>
-          
-          <div class="d-flex align-items-center gap-1 bg-dark rounded px-2 py-1 border border-secondary" v-if="isTextMode || selectedTextIndex !== null">
-            <button @click="adjustFontSize(-2)" class="btn btn-sm btn-link text-white text-decoration-none py-0 px-2" style="font-size: 1.2em;">−</button>
-            <span class="text-white small user-select-none" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
-            <button @click="adjustFontSize(2)" class="btn btn-sm btn-link text-white text-decoration-none py-0 px-2" style="font-size: 1.2em;">+</button>
-            
-            <div class="vr bg-secondary mx-1"></div>
-            
-            <button @click="toggleBold" class="btn btn-sm p-0 px-1 text-white" :class="{ 'text-info fw-bold': currentFontWeight === 'bold' }">B</button>
-            <button @click="toggleItalic" class="btn btn-sm p-0 px-1 text-white" :class="{ 'text-info fst-italic': currentFontStyle === 'italic' }">I</button>
-            
-            <div class="vr bg-secondary mx-1" v-if="selectedTextIndex !== null"></div>
-            <button v-if="selectedTextIndex !== null" @click="removeText(selectedTextIndex)" class="btn btn-sm btn-danger py-0 px-2 ms-1">×</button>
+        <div class="d-flex align-items-center d-none d-md-flex">
+          <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+            <span>✨</span>
           </div>
+          <span class="fw-bold tracking-tight">Easy PDF</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3 mx-auto">
           
-          <div class="btn-group ms-2">
-            <button @click="openSignaturePad" class="btn btn-sm btn-warning rounded-pill px-3">Sign</button>
-            <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning rounded-pill px-3 d-none d-md-block">
-              Saved
+          <div class="d-flex align-items-center bg-dark rounded-pill p-1 border border-secondary">
+            <button 
+              @click="toggleTextMode" 
+              class="btn btn-sm rounded-pill px-3 transition-all"
+              :class="isTextMode ? 'btn-light fw-bold' : 'btn-dark text-secondary hover-white'">
+              <span v-if="!isTextMode">T</span>
+              <span v-else>Tap PDF</span>
+            </button>
+            
+            <div v-if="isTextMode || selectedTextIndex !== null" class="d-flex align-items-center px-2 animate-fade-in">
+              <div class="vr bg-secondary mx-2" style="height: 15px;"></div>
+              <button @click="adjustFontSize(-2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale">➖</button>
+              <span class="mx-2 small fw-mono text-muted" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
+              <button @click="adjustFontSize(2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale">➕</button>
+              
+              <div class="vr bg-secondary mx-2" style="height: 15px;"></div>
+              <button @click="toggleBold" class="btn btn-sm p-0 fw-bold hover-scale" :class="currentFontWeight === 'bold' ? 'text-info' : 'text-secondary'">B</button>
+              <span class="mx-1"></span>
+              <button @click="toggleItalic" class="btn btn-sm p-0 fst-italic hover-scale" :class="currentFontStyle === 'italic' ? 'text-info' : 'text-secondary'">I</button>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button 
+              @click="openSignaturePad" 
+              class="btn btn-sm btn-warning rounded-pill px-3 d-flex align-items-center gap-2 shadow-sm hover-lift">
+              <span>✍️</span>
+              <span class="d-none d-sm-inline fw-bold">Sign</span>
+            </button>
+            
+            <button 
+              @click="showSavedSignatures = true" 
+              class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-2 hover-white"
+              title="Open Saved Signatures">
+              <span>📂</span>
+              <span class="d-none d-sm-inline">Library</span>
+              <span class="badge bg-dark border border-secondary rounded-circle ms-1" style="font-size: 10px;">{{ savedSignatures.length }}</span>
             </button>
           </div>
-          
-          <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold rounded-pill px-4 shadow-sm d-none d-md-block ms-auto">
-            Download PDF
+
+        </div>
+
+        <div>
+          <button 
+            @click="downloadPdf" 
+            class="btn btn-success rounded-pill px-4 fw-bold shadow-lg hover-lift d-flex align-items-center gap-2"
+            :disabled="!pdfFile">
+            <span>💾</span>
+            <span class="d-none d-md-inline">Download</span>
           </button>
         </div>
+
       </div>
     </nav>
 
@@ -57,19 +75,21 @@
       :class="{ 'justify-content-center flex-grow-1': !pdfFile }"
       style="z-index: 10;">
       
-      <div v-if="!pdfFile" class="upload-box card bg-dark border-secondary text-center p-4 shadow-lg mx-3" style="max-width: 500px;">
+      <div v-if="!pdfFile" class="upload-box card bg-dark border-secondary text-center p-5 shadow-lg mx-3" style="max-width: 500px; border-radius: 20px;">
         <div class="card-body">
-          <div class="mb-3 display-1">📄</div>
-          <h4 class="card-title text-white mb-2">Upload Document</h4>
-          <p class="card-text text-secondary mb-4 small">Tap below to select a PDF</p>
-          <label class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm w-100">
-            Choose File
+          <div class="mb-4 p-3 bg-secondary bg-opacity-10 rounded-circle d-inline-block">
+            <span class="display-4">📄</span>
+          </div>
+          <h3 class="card-title text-white mb-2 fw-bold">Upload PDF</h3>
+          <p class="card-text text-secondary mb-4">Tap the button below to start editing</p>
+          <label class="btn btn-primary btn-lg px-5 rounded-pill shadow-lg hover-lift">
+            Select Document
             <input type="file" accept="application/pdf" @change="handleFileUpload" hidden />
           </label>
         </div>
       </div>
 
-      <div v-else class="pdf-wrapper shadow-lg" @click.self="deselectAll">
+      <div v-else class="pdf-wrapper shadow-2xl" @click.self="deselectAll">
         <canvas ref="pdfCanvas" class="d-block mx-auto"></canvas>
 
         <div 
@@ -115,6 +135,12 @@
               @focus="selectText(index)"
             />
           </div>
+          
+          <div v-if="selectedTextIndex === index" class="position-absolute start-50 translate-middle-x" style="top: -35px;">
+            <button @click.stop="removeText(index)" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger">
+              Delete
+            </button>
+          </div>
 
         </div>
 
@@ -135,8 +161,7 @@
           @click.stop="selectSignature">
           
           <div v-if="selectedSignature" class="floating-toolbar" @mousedown.stop @touchstart.stop>
-            <span class="text-white small me-2 user-select-none">Sign</span>
-            <button @click.stop="removeSignature" class="btn btn-sm btn-danger py-0 px-2">Delete</button>
+            <button @click.stop="removeSignature" class="btn btn-sm btn-danger py-1 px-3 rounded-pill shadow-sm">Delete</button>
           </div>
 
           <img :src="signatureImage" class="w-100 h-100" style="pointer-events: none; user-select: none;" />
@@ -153,13 +178,13 @@
     </div>
 
     <div v-if="showSignaturePad" class="modal-overlay">
-      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 95%; max-width: 500px;">
-        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">✍️ Draw Signature</h5>
+      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 95%; max-width: 500px; border-radius: 15px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
+          <h5 class="mb-0 fw-bold">✍️ Draw Signature</h5>
           <button @click="closeSignaturePad" class="btn-close btn-close-white"></button>
         </div>
         
-        <div class="card-body bg-white text-center p-0 position-relative" style="height: 200px;" ref="sigPadContainer">
+        <div class="card-body bg-white text-center p-0 position-relative overflow-hidden" style="height: 250px;" ref="sigPadContainer">
           <canvas 
             ref="sigCanvas" 
             class="d-block w-100 h-100"
@@ -167,40 +192,47 @@
             @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing" @mouseleave="stopDrawing"
             @touchstart="startDrawing" @touchmove="draw" @touchend="stopDrawing">
           </canvas>
+          <div class="position-absolute bottom-0 start-0 w-100 border-top text-muted small py-1" style="background: rgba(240,240,240,0.8); pointer-events: none;">
+            Sign inside the box
+          </div>
         </div>
         
-        <div class="card-footer border-secondary d-flex justify-content-between">
-          <button @click="clearSignature" class="btn btn-outline-light btn-sm">Clear</button>
-          <button @click="saveSignature" class="btn btn-primary btn-sm px-4">Use Signature</button>
+        <div class="card-footer border-secondary d-flex justify-content-between py-3">
+          <button @click="clearSignature" class="btn btn-outline-light rounded-pill px-4">Clear</button>
+          <button @click="saveSignature" class="btn btn-primary rounded-pill px-5 shadow-sm">Use Signature</button>
         </div>
       </div>
     </div>
 
     <div v-if="showSavedSignatures" class="modal-overlay" @click.self="showSavedSignatures = false">
-      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 90%; max-width: 400px; max-height: 80vh;">
-        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-          <h5 class="mb-0">📂 My Signatures</h5>
+      <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 90%; max-width: 400px; max-height: 80vh; border-radius: 15px;">
+        <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
+          <h5 class="mb-0 fw-bold">📂 Saved Signatures</h5>
           <button @click="showSavedSignatures = false" class="btn-close btn-close-white"></button>
         </div>
         <div class="card-body overflow-auto p-3">
-          <div v-if="savedSignatures.length === 0" class="text-center text-muted py-4">
+          <div v-if="savedSignatures.length === 0" class="text-center text-muted py-5">
+            <div class="mb-2" style="font-size: 2rem; opacity: 0.5;">📭</div>
             <p>No saved signatures yet.</p>
           </div>
           <div class="d-grid gap-3">
             <div 
               v-for="(sig, idx) in savedSignatures" 
               :key="idx" 
-              class="saved-sig-item bg-white rounded p-2 position-relative">
+              class="saved-sig-item bg-white rounded p-3 position-relative shadow-sm transition-all"
+              @click="useSavedSignature(sig)">
               <img 
                 :src="sig.data" 
                 class="img-fluid" 
-                style="height: 60px; object-fit: contain; cursor: pointer; display: block; margin: 0 auto;"
-                @click="useSavedSignature(sig)"
+                style="height: 60px; object-fit: contain; display: block; margin: 0 auto;"
               />
+              <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center opacity-0 hover-opacity-100" style="background: rgba(13, 110, 253, 0.1); cursor: pointer;">
+                <span class="badge bg-primary">Tap to use</span>
+              </div>
               <button 
                 @click.stop="deleteSavedSignature(idx)" 
-                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                style="width: 24px; height: 24px; font-size: 14px;">
+                class="btn btn-danger btn-sm position-absolute top-0 end-0 m-2 p-0 rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                style="width: 24px; height: 24px; font-size: 14px; z-index: 10;">
                 ×
               </button>
             </div>
@@ -286,7 +318,7 @@ const renderPdf = async (buffer) => {
   const loadingTask = pdfjsLib.getDocument({ data: buffer });
   const pdf = await loadingTask.promise;
   const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 1.5 }); // Base viewport
+  const viewport = page.getViewport({ scale: 1.5 });
 
   // Responsive Scaling Logic
   const screenWidth = window.innerWidth;
@@ -334,7 +366,6 @@ const handleCanvasClick = (e) => {
 const selectText = (index) => {
   selectedTextIndex.value = index;
   selectedSignature.value = false;
-  // Sync toolbar with selected text
   const item = textElements.value[index];
   currentFontSize.value = item.fontSize;
   currentFontWeight.value = item.fontWeight;
@@ -350,7 +381,6 @@ const adjustFontSize = (amount) => {
     item.fontSize = newSize;
     currentFontSize.value = newSize;
   } else {
-    // Just update default
     let newSize = currentFontSize.value + amount;
     if (newSize < 8) newSize = 8;
     if (newSize > 72) newSize = 72;
@@ -383,7 +413,7 @@ const startDragText = (e, index) => {
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
-  selectText(index); // Ensure toolbar updates
+  selectText(index);
   
   const pos = getClientPos(e);
   const startX = pos.x;
@@ -682,6 +712,7 @@ const downloadPdf = async () => {
   border: 1px solid #444;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
 /* UPLOAD BOX */
@@ -692,40 +723,40 @@ const downloadPdf = async () => {
 }
 .upload-box:active { transform: scale(0.98); }
 
+/* CUSTOM UTILITIES */
+.hover-scale:hover { transform: scale(1.1); transition: transform 0.2s; }
+.hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; }
+.hover-white:hover { color: white !important; }
+.transition-all { transition: all 0.2s; }
+
 /* ELEMENT WRAPPER */
 .element-wrapper {
-  /* No fixed width here. It adapts to content */
   display: inline-block;
   transition: border-color 0.1s;
 }
-
 .element-wrapper.is-selected {
   border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
 }
 
-/* DYNAMIC INPUT STYLING (Stack Trick) */
+/* DYNAMIC INPUT STYLING */
 .dynamic-input-container {
   display: grid;
   align-items: center;
 }
-
-/* Both hidden span and input occupy the same grid cell */
 .dynamic-input-container::after {
   content: attr(data-value) " ";
   visibility: hidden;
   white-space: pre;
 }
-
 .text-measurer {
   grid-area: 1 / 1;
   visibility: hidden;
   white-space: pre;
   pointer-events: none;
-  padding: 4px; /* Match input padding */
-  min-width: 40px; /* Minimum size */
+  padding: 4px;
+  min-width: 40px;
 }
-
 .bare-input {
   grid-area: 1 / 1;
   background: transparent;
@@ -735,7 +766,7 @@ const downloadPdf = async () => {
   outline: none;
   width: 100%;
   height: 100%;
-  min-width: 40px; /* Ensure you can always click it */
+  min-width: 40px;
   overflow: hidden;
 }
 
@@ -776,8 +807,9 @@ const downloadPdf = async () => {
   background: rgba(0,0,0,0.85);
   display: flex; justify-content: center; align-items: center;
   z-index: 3000;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(5px);
 }
-.saved-sig-item { border: 1px solid #dee2e6; }
-.saved-sig-item:active { background-color: #f8f9fa !important; }
+.saved-sig-item { border: 1px solid #dee2e6; cursor: pointer; }
+.saved-sig-item:hover { border-color: #0d6efd; transform: scale(1.02); }
+.hover-opacity-100:hover { opacity: 1 !important; }
 </style>
