@@ -3,27 +3,50 @@
     
     <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="background: #2b2b2b !important;">
       <div class="container-fluid px-3">
-        <div class="d-flex justify-content-between w-100 align-items-center">
-          <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1.1rem;">
-            <span class="me-2">✨</span> PDF Editor
-          </span>
-          
-          <div class="d-flex gap-2" v-if="pdfFile">
-            <button 
-              @click="toggleTextMode" 
-              :class="['btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
-              <span>{{ isTextMode ? 'Tap PDF to Type' : '+ Text' }}</span>
+        <div class="d-flex justify-content-between w-100 align-items-center mb-2" v-if="pdfFile">
+             <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1rem;">
+              <span class="me-2">✨</span> PDF Editor
+            </span>
+             <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-md-none">
+              Save
             </button>
-
+        </div>
+        <span class="navbar-brand fw-bold d-none d-md-flex align-items-center" v-else>
+          <span class="me-2">✨</span> Vue PDF Editor
+        </span>
+        
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center w-100" v-if="pdfFile">
+          
+          <button 
+            @click="toggleTextMode" 
+            :class="['btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
+            <span>{{ isTextMode ? 'Tap PDF to Type' : 'Add Text' }}</span>
+          </button>
+          
+          <div class="d-flex align-items-center gap-1 bg-dark rounded px-2 py-1 border border-secondary" v-if="isTextMode || selectedTextIndex !== null">
+            <button @click="adjustFontSize(-2)" class="btn btn-sm btn-link text-white text-decoration-none py-0 px-2" style="font-size: 1.2em;">−</button>
+            <span class="text-white small user-select-none" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
+            <button @click="adjustFontSize(2)" class="btn btn-sm btn-link text-white text-decoration-none py-0 px-2" style="font-size: 1.2em;">+</button>
+            
+            <div class="vr bg-secondary mx-1"></div>
+            
+            <button @click="toggleBold" class="btn btn-sm p-0 px-1 text-white" :class="{ 'text-info fw-bold': currentFontWeight === 'bold' }">B</button>
+            <button @click="toggleItalic" class="btn btn-sm p-0 px-1 text-white" :class="{ 'text-info fst-italic': currentFontStyle === 'italic' }">I</button>
+            
+            <div class="vr bg-secondary mx-1" v-if="selectedTextIndex !== null"></div>
+            <button v-if="selectedTextIndex !== null" @click="removeText(selectedTextIndex)" class="btn btn-sm btn-danger py-0 px-2 ms-1">×</button>
+          </div>
+          
+          <div class="btn-group ms-2">
             <button @click="openSignaturePad" class="btn btn-sm btn-warning rounded-pill px-3">Sign</button>
             <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning rounded-pill px-3 d-none d-md-block">
               Saved
             </button>
-            
-            <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold rounded-pill px-4 shadow-sm">
-              Save
-            </button>
           </div>
+          
+          <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold rounded-pill px-4 shadow-sm d-none d-md-block ms-auto">
+            Download PDF
+          </button>
         </div>
       </div>
     </nav>
@@ -65,52 +88,34 @@
             left: item.x + 'px', 
             top: item.y + 'px',
             zIndex: selectedTextIndex === index ? 1000 : 1,
-            touchAction: 'none'
+            touchAction: 'none',
+            maxWidth: '90%'
           }"
           @mousedown="startDragText($event, index)"
           @touchstart="startDragText($event, index)"
           @click.stop="selectText(index)">
           
-          <div v-if="selectedTextIndex === index" class="floating-toolbar" @mousedown.stop @touchstart.stop>
-            <div class="d-flex align-items-center bg-dark rounded p-1 me-2 border border-secondary">
-              <button @click="adjustFontSize(index, -2)" class="btn btn-sm btn-dark text-white py-0 px-2">−</button>
-              <span class="mx-2 small text-muted user-select-none" style="min-width: 20px; text-align: center;">{{ item.fontSize }}</span>
-              <button @click="adjustFontSize(index, 2)" class="btn btn-sm btn-dark text-white py-0 px-2">+</button>
-            </div>
-
-            <div class="btn-group me-2">
-              <button 
-                @click="toggleFontWeight(index)" 
-                class="btn btn-sm" 
-                :class="item.fontWeight === 'bold' ? 'btn-light text-dark' : 'btn-dark text-white border-secondary'">
-                <strong>B</strong>
-              </button>
-              <button 
-                @click="toggleFontStyle(index)" 
-                class="btn btn-sm" 
-                :class="item.fontStyle === 'italic' ? 'btn-light text-dark' : 'btn-dark text-white border-secondary'">
-                <em>I</em>
-              </button>
-            </div>
-
-            <button @click.stop="removeText(index)" class="btn btn-sm btn-danger px-2 d-flex align-items-center">
-              <span style="font-size: 1.2em; line-height: 0.5;">×</span>
-            </button>
+          <div class="dynamic-input-container">
+             <span class="text-measurer" :style="{
+                fontSize: item.fontSize + 'px',
+                fontWeight: item.fontWeight,
+                fontStyle: item.fontStyle,
+             }">{{ item.text || 'Type...' }}</span>
+             
+             <input 
+              v-model="item.text"
+              :ref="el => { if (index === textElements.length - 1) el?.focus() }"
+              class="bare-input"
+              :style="{ 
+                fontSize: item.fontSize + 'px',
+                fontWeight: item.fontWeight,
+                fontStyle: item.fontStyle,
+              }"
+              placeholder="Type..."
+              @focus="selectText(index)"
+            />
           </div>
 
-          <input 
-            v-model="item.text"
-            :ref="el => { if (index === textElements.length - 1) el?.focus() }"
-            class="bare-input"
-            :style="{ 
-              fontSize: item.fontSize + 'px',
-              fontWeight: item.fontWeight,
-              fontStyle: item.fontStyle,
-              minWidth: '50px'
-            }"
-            placeholder="Type..."
-            @focus="selectText(index)"
-          />
         </div>
 
         <div 
@@ -130,8 +135,7 @@
           @click.stop="selectSignature">
           
           <div v-if="selectedSignature" class="floating-toolbar" @mousedown.stop @touchstart.stop>
-            <span class="text-white small me-2 user-select-none">Signature</span>
-            <button @click.stop="saveCurrentSigToStorage" class="btn btn-sm btn-success py-0 px-2 me-2">Save</button>
+            <span class="text-white small me-2 user-select-none">Sign</span>
             <button @click.stop="removeSignature" class="btn btn-sm btn-danger py-0 px-2">Delete</button>
           </div>
 
@@ -225,8 +229,10 @@ const isTextMode = ref(false);
 const textElements = ref([]);
 const scale = ref(1.5);
 
-// Typography Defaults
-const defaultFontSize = 18;
+// Typography
+const currentFontSize = ref(18);
+const currentFontWeight = ref('normal');
+const currentFontStyle = ref('normal');
 
 // Selection
 const selectedTextIndex = ref(null);
@@ -302,7 +308,7 @@ const renderPdf = async (buffer) => {
   await page.render({ canvasContext: context, viewport: finalViewport }).promise;
 };
 
-// --- 2. Text Logic (New & Improved) ---
+// --- 2. Text Logic (Dynamic Size) ---
 const toggleTextMode = () => {
   isTextMode.value = !isTextMode.value;
   if (isTextMode.value) deselectAll();
@@ -317,9 +323,9 @@ const handleCanvasClick = (e) => {
     x: clientPos.x - rect.left, 
     y: clientPos.y - rect.top, 
     text: '',
-    fontSize: defaultFontSize,
-    fontWeight: 'normal',
-    fontStyle: 'normal'
+    fontSize: currentFontSize.value,
+    fontWeight: currentFontWeight.value,
+    fontStyle: currentFontStyle.value
   });
   selectedTextIndex.value = textElements.value.length - 1;
   isTextMode.value = false;
@@ -328,25 +334,48 @@ const handleCanvasClick = (e) => {
 const selectText = (index) => {
   selectedTextIndex.value = index;
   selectedSignature.value = false;
+  // Sync toolbar with selected text
+  const item = textElements.value[index];
+  currentFontSize.value = item.fontSize;
+  currentFontWeight.value = item.fontWeight;
+  currentFontStyle.value = item.fontStyle;
 };
 
-// NEW: Direct Text Styling Functions
-const adjustFontSize = (index, amount) => {
-  const item = textElements.value[index];
-  const newSize = item.fontSize + amount;
-  if (newSize >= 8 && newSize <= 72) {
+const adjustFontSize = (amount) => {
+  if (selectedTextIndex.value !== null) {
+    const item = textElements.value[selectedTextIndex.value];
+    let newSize = item.fontSize + amount;
+    if (newSize < 8) newSize = 8;
+    if (newSize > 72) newSize = 72;
     item.fontSize = newSize;
+    currentFontSize.value = newSize;
+  } else {
+    // Just update default
+    let newSize = currentFontSize.value + amount;
+    if (newSize < 8) newSize = 8;
+    if (newSize > 72) newSize = 72;
+    currentFontSize.value = newSize;
   }
 };
 
-const toggleFontWeight = (index) => {
-  const item = textElements.value[index];
-  item.fontWeight = item.fontWeight === 'bold' ? 'normal' : 'bold';
+const toggleBold = () => {
+  if (selectedTextIndex.value !== null) {
+    const item = textElements.value[selectedTextIndex.value];
+    item.fontWeight = item.fontWeight === 'bold' ? 'normal' : 'bold';
+    currentFontWeight.value = item.fontWeight;
+  } else {
+    currentFontWeight.value = currentFontWeight.value === 'bold' ? 'normal' : 'bold';
+  }
 };
 
-const toggleFontStyle = (index) => {
-  const item = textElements.value[index];
-  item.fontStyle = item.fontStyle === 'italic' ? 'normal' : 'italic';
+const toggleItalic = () => {
+  if (selectedTextIndex.value !== null) {
+    const item = textElements.value[selectedTextIndex.value];
+    item.fontStyle = item.fontStyle === 'italic' ? 'normal' : 'italic';
+    currentFontStyle.value = item.fontStyle;
+  } else {
+    currentFontStyle.value = currentFontStyle.value === 'italic' ? 'normal' : 'italic';
+  }
 };
 
 const startDragText = (e, index) => {
@@ -354,6 +383,7 @@ const startDragText = (e, index) => {
   isDraggingText.value = true;
   selectedTextIndex.value = index;
   selectedSignature.value = false;
+  selectText(index); // Ensure toolbar updates
   
   const pos = getClientPos(e);
   const startX = pos.x;
@@ -482,10 +512,6 @@ const useSavedSignature = (sigObject) => {
     width: baseWidth, 
     height: baseWidth / ratio 
   };
-};
-
-const saveCurrentSigToStorage = () => {
-  alert('Signature saved!');
 };
 
 const deleteSavedSignature = (index) => {
@@ -666,17 +692,54 @@ const downloadPdf = async () => {
 }
 .upload-box:active { transform: scale(0.98); }
 
-/* INTERACTIVE ELEMENTS */
+/* ELEMENT WRAPPER */
 .element-wrapper {
-  position: absolute;
+  /* No fixed width here. It adapts to content */
+  display: inline-block;
   transition: border-color 0.1s;
 }
+
 .element-wrapper.is-selected {
   border: 1px dashed #0d6efd;
   background-color: rgba(13, 110, 253, 0.05);
 }
 
-/* FLOATING TOOLBAR (NEW) */
+/* DYNAMIC INPUT STYLING (Stack Trick) */
+.dynamic-input-container {
+  display: grid;
+  align-items: center;
+}
+
+/* Both hidden span and input occupy the same grid cell */
+.dynamic-input-container::after {
+  content: attr(data-value) " ";
+  visibility: hidden;
+  white-space: pre;
+}
+
+.text-measurer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
+  padding: 4px; /* Match input padding */
+  min-width: 40px; /* Minimum size */
+}
+
+.bare-input {
+  grid-area: 1 / 1;
+  background: transparent;
+  border: none;
+  color: #000;
+  padding: 4px;
+  outline: none;
+  width: 100%;
+  height: 100%;
+  min-width: 40px; /* Ensure you can always click it */
+  overflow: hidden;
+}
+
+/* FLOATING TOOLBAR */
 .floating-toolbar {
   position: absolute;
   top: -45px;
@@ -695,11 +758,6 @@ const downloadPdf = async () => {
 .floating-toolbar::after {
   content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
   border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #222;
-}
-
-.bare-input {
-  background: transparent; border: none; color: #000;
-  padding: 4px; outline: none; width: 100%;
 }
 
 /* RESIZE HANDLES */
