@@ -1,57 +1,74 @@
 <template>
   <div class="bg-dark min-vh-100 text-white pb-5 position-relative d-flex flex-column font-sans app-container">
     
-    <nav class="navbar navbar-expand-lg sticky-top p-3" style="background: transparent; pointer-events: none;">
+    <nav class="navbar navbar-expand-lg sticky-top p-3" style="background: transparent; pointer-events: none; z-index: 2000;">
       <div class="container-fluid shadow-lg rounded-pill px-4 py-2 d-flex align-items-center justify-content-between" 
            style="background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px); border: 1px solid #444; pointer-events: auto; max-width: 1200px; margin: 0 auto;">
         
-        <div class="d-flex align-items-center d-none d-md-flex">
-          <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+        <div class="d-flex align-items-center">
+          <div class="bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 32px; height: 32px;">
             <span>✨</span>
           </div>
-          <span class="fw-bold tracking-tight">Easy PDF</span>
+          <span class="fw-bold d-none d-sm-block text-white tracking-tight">Easy PDF</span>
         </div>
 
         <div class="d-flex align-items-center gap-3 mx-auto">
           
-          <div class="d-flex align-items-center bg-dark rounded-pill p-1 border border-secondary">
+          <div class="d-flex align-items-center bg-dark rounded-pill p-1 border border-secondary shadow-sm">
             <button 
               @click="toggleTextMode" 
-              class="btn btn-sm rounded-pill px-3 transition-all"
+              class="btn btn-sm rounded-pill px-3 transition-all d-flex align-items-center gap-2"
               :class="isTextMode ? 'btn-light fw-bold' : 'btn-dark text-secondary hover-white'">
-              <span v-if="!isTextMode">T</span>
-              <span v-else>Tap PDF</span>
+              <span style="font-size: 1.1em;">T</span>
+              <span class="d-none d-md-inline">{{ isTextMode ? 'Tap PDF' : 'Text' }}</span>
             </button>
             
-            <div v-if="isTextMode || selectedTextIndex !== null" class="d-flex align-items-center px-2 animate-fade-in">
-              <div class="vr bg-secondary mx-2" style="height: 15px;"></div>
-              <button @click="adjustFontSize(-2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale">➖</button>
-              <span class="mx-2 small fw-mono text-muted" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
-              <button @click="adjustFontSize(2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale">➕</button>
+            <div v-if="isTextMode || selectedTextIndex !== null" class="d-flex align-items-center px-2 animate-fade-in border-start border-secondary ms-1">
+              <button @click="adjustFontSize(-2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2">➖</button>
+              <span class="mx-1 small fw-mono text-muted user-select-none" style="min-width: 20px; text-align: center;">{{ currentFontSize }}</span>
+              <button @click="adjustFontSize(2)" class="btn btn-link text-white p-0 text-decoration-none hover-scale px-2">➕</button>
               
-              <div class="vr bg-secondary mx-2" style="height: 15px;"></div>
-              <button @click="toggleBold" class="btn btn-sm p-0 fw-bold hover-scale" :class="currentFontWeight === 'bold' ? 'text-info' : 'text-secondary'">B</button>
-              <span class="mx-1"></span>
-              <button @click="toggleItalic" class="btn btn-sm p-0 fst-italic hover-scale" :class="currentFontStyle === 'italic' ? 'text-info' : 'text-secondary'">I</button>
+              <div class="vr bg-secondary mx-2" style="height: 14px;"></div>
+              
+              <button @click="toggleBold" class="btn btn-sm p-0 fw-bold hover-scale px-1" :class="currentFontWeight === 'bold' ? 'text-info' : 'text-secondary'">B</button>
+              <button @click="toggleItalic" class="btn btn-sm p-0 fst-italic hover-scale px-1" :class="currentFontStyle === 'italic' ? 'text-info' : 'text-secondary'">I</button>
             </div>
           </div>
 
-          <div class="d-flex gap-2">
-            <button 
-              @click="openSignaturePad" 
-              class="btn btn-sm btn-warning rounded-pill px-3 d-flex align-items-center gap-2 shadow-sm hover-lift">
-              <span>✍️</span>
-              <span class="d-none d-sm-inline fw-bold">Sign</span>
-            </button>
+          <div class="position-relative d-inline-block">
+            <div class="btn-group shadow-sm rounded-pill">
+              
+              <button 
+                @click="openSignaturePad" 
+                class="btn btn-warning fw-bold d-flex align-items-center gap-2 ps-3 pe-2 py-1"
+                style="border-top-left-radius: 50rem; border-bottom-left-radius: 50rem; border-right: 1px solid rgba(0,0,0,0.1);">
+                <span>✍️</span>
+                <span class="d-none d-sm-inline">Sign</span>
+              </button>
+
+              <button 
+                @click="toggleSigDropdown" 
+                class="btn btn-warning py-1 px-2 d-flex align-items-center justify-content-center"
+                style="border-top-right-radius: 50rem; border-bottom-right-radius: 50rem; width: 30px;">
+                <small>▼</small>
+              </button>
+            </div>
+
+            <div v-if="isSigDropdownOpen" class="custom-dropdown-menu mt-2 p-1 shadow-lg border border-secondary bg-dark rounded-3 position-absolute start-50 translate-middle-x">
+              <div class="dropdown-header text-muted small text-uppercase fw-bold px-3 py-1">Library</div>
+              <button @click="openSavedLibrary" class="dropdown-item d-flex align-items-center justify-content-between gap-3 text-white rounded-2 px-3 py-2">
+                <span class="d-flex align-items-center gap-2">
+                  <span>📂</span> Saved Signatures
+                </span>
+                <span class="badge bg-secondary rounded-pill">{{ savedSignatures.length }}</span>
+              </button>
+              <div v-if="savedSignatures.length > 0" class="border-top border-secondary my-1"></div>
+              <button v-if="savedSignatures.length > 0" @click="clearAllSignatures" class="dropdown-item text-danger small px-3 py-1 text-center">
+                Clear All
+              </button>
+            </div>
             
-            <button 
-              @click="showSavedSignatures = true" 
-              class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-flex align-items-center gap-2 hover-white"
-              title="Open Saved Signatures">
-              <span>📂</span>
-              <span class="d-none d-sm-inline">Library</span>
-              <span class="badge bg-dark border border-secondary rounded-circle ms-1" style="font-size: 10px;">{{ savedSignatures.length }}</span>
-            </button>
+            <div v-if="isSigDropdownOpen" @click="isSigDropdownOpen = false" class="position-fixed top-0 start-0 w-100 h-100" style="z-index: -1; cursor: default;"></div>
           </div>
 
         </div>
@@ -62,7 +79,7 @@
             class="btn btn-success rounded-pill px-4 fw-bold shadow-lg hover-lift d-flex align-items-center gap-2"
             :disabled="!pdfFile">
             <span>💾</span>
-            <span class="d-none d-md-inline">Download</span>
+            <span class="d-none d-md-inline">Save</span>
           </button>
         </div>
 
@@ -81,9 +98,9 @@
             <span class="display-4">📄</span>
           </div>
           <h3 class="card-title text-white mb-2 fw-bold">Upload PDF</h3>
-          <p class="card-text text-secondary mb-4">Tap the button below to start editing</p>
+          <p class="card-text text-secondary mb-4">Tap below to select a document</p>
           <label class="btn btn-primary btn-lg px-5 rounded-pill shadow-lg hover-lift">
-            Select Document
+            Choose File
             <input type="file" accept="application/pdf" @change="handleFileUpload" hidden />
           </label>
         </div>
@@ -137,11 +154,10 @@
           </div>
           
           <div v-if="selectedTextIndex === index" class="position-absolute start-50 translate-middle-x" style="top: -35px;">
-            <button @click.stop="removeText(index)" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger">
-              Delete
+             <button @click.stop="removeText(index)" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 10px;">
+              DELETE
             </button>
           </div>
-
         </div>
 
         <div 
@@ -160,8 +176,10 @@
           @touchstart="startDragSig"
           @click.stop="selectSignature">
           
-          <div v-if="selectedSignature" class="floating-toolbar" @mousedown.stop @touchstart.stop>
-            <button @click.stop="removeSignature" class="btn btn-sm btn-danger py-1 px-3 rounded-pill shadow-sm">Delete</button>
+          <div v-if="selectedSignature" class="position-absolute start-50 translate-middle-x" style="top: -35px;">
+            <button @click.stop="removeSignature" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm border border-secondary text-danger fw-bold" style="font-size: 10px;">
+              DELETE
+            </button>
           </div>
 
           <img :src="signatureImage" class="w-100 h-100" style="pointer-events: none; user-select: none;" />
@@ -180,7 +198,7 @@
     <div v-if="showSignaturePad" class="modal-overlay">
       <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 95%; max-width: 500px; border-radius: 15px;">
         <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0 fw-bold">✍️ Draw Signature</h5>
+          <h5 class="mb-0 fw-bold">✍️ New Signature</h5>
           <button @click="closeSignaturePad" class="btn-close btn-close-white"></button>
         </div>
         
@@ -193,13 +211,13 @@
             @touchstart="startDrawing" @touchmove="draw" @touchend="stopDrawing">
           </canvas>
           <div class="position-absolute bottom-0 start-0 w-100 border-top text-muted small py-1" style="background: rgba(240,240,240,0.8); pointer-events: none;">
-            Sign inside the box
+            Sign above
           </div>
         </div>
         
         <div class="card-footer border-secondary d-flex justify-content-between py-3">
           <button @click="clearSignature" class="btn btn-outline-light rounded-pill px-4">Clear</button>
-          <button @click="saveSignature" class="btn btn-primary rounded-pill px-5 shadow-sm">Use Signature</button>
+          <button @click="saveSignature" class="btn btn-primary rounded-pill px-5 shadow-sm">Use This</button>
         </div>
       </div>
     </div>
@@ -207,13 +225,13 @@
     <div v-if="showSavedSignatures" class="modal-overlay" @click.self="showSavedSignatures = false">
       <div class="card bg-dark text-white border-secondary shadow-lg" style="width: 90%; max-width: 400px; max-height: 80vh; border-radius: 15px;">
         <div class="card-header border-secondary d-flex justify-content-between align-items-center py-3">
-          <h5 class="mb-0 fw-bold">📂 Saved Signatures</h5>
+          <h5 class="mb-0 fw-bold">📂 My Signatures</h5>
           <button @click="showSavedSignatures = false" class="btn-close btn-close-white"></button>
         </div>
         <div class="card-body overflow-auto p-3">
           <div v-if="savedSignatures.length === 0" class="text-center text-muted py-5">
             <div class="mb-2" style="font-size: 2rem; opacity: 0.5;">📭</div>
-            <p>No saved signatures yet.</p>
+            <p>No saved signatures.</p>
           </div>
           <div class="d-grid gap-3">
             <div 
@@ -271,6 +289,7 @@ const selectedTextIndex = ref(null);
 const isDraggingText = ref(false);
 
 // Signature
+const isSigDropdownOpen = ref(false); // New Dropdown State
 const showSignaturePad = ref(false);
 const showSavedSignatures = ref(false);
 const savedSignatures = ref([]);
@@ -320,7 +339,6 @@ const renderPdf = async (buffer) => {
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 1.5 });
 
-  // Responsive Scaling Logic
   const screenWidth = window.innerWidth;
   let finalScale = 1.5;
   if (screenWidth < 800) {
@@ -340,7 +358,7 @@ const renderPdf = async (buffer) => {
   await page.render({ canvasContext: context, viewport: finalViewport }).promise;
 };
 
-// --- 2. Text Logic (Dynamic Size) ---
+// --- 2. Text Logic ---
 const toggleTextMode = () => {
   isTextMode.value = !isTextMode.value;
   if (isTextMode.value) deselectAll();
@@ -373,19 +391,17 @@ const selectText = (index) => {
 };
 
 const adjustFontSize = (amount) => {
+  let newSize = currentFontSize.value + amount;
   if (selectedTextIndex.value !== null) {
     const item = textElements.value[selectedTextIndex.value];
-    let newSize = item.fontSize + amount;
+    newSize = item.fontSize + amount;
     if (newSize < 8) newSize = 8;
     if (newSize > 72) newSize = 72;
     item.fontSize = newSize;
-    currentFontSize.value = newSize;
-  } else {
-    let newSize = currentFontSize.value + amount;
-    if (newSize < 8) newSize = 8;
-    if (newSize > 72) newSize = 72;
-    currentFontSize.value = newSize;
   }
+  if (newSize < 8) newSize = 8;
+  if (newSize > 72) newSize = 72;
+  currentFontSize.value = newSize;
 };
 
 const toggleBold = () => {
@@ -447,8 +463,18 @@ const removeText = (index) => {
   selectedTextIndex.value = null;
 };
 
-// --- 3. Optimized Snappy Signature Logic ---
+// --- 3. Signature Logic (Dropdown + Snappy) ---
+const toggleSigDropdown = () => {
+  isSigDropdownOpen.value = !isSigDropdownOpen.value;
+};
+
+const openSavedLibrary = () => {
+  isSigDropdownOpen.value = false;
+  showSavedSignatures.value = true;
+};
+
 const openSignaturePad = async () => {
+  isSigDropdownOpen.value = false;
   showSignaturePad.value = true;
   await nextTick();
   if (sigCanvas.value && sigPadContainer.value) {
@@ -547,6 +573,13 @@ const useSavedSignature = (sigObject) => {
 const deleteSavedSignature = (index) => {
   savedSignatures.value.splice(index, 1);
   localStorage.setItem('my_signatures', JSON.stringify(savedSignatures.value));
+};
+
+const clearAllSignatures = () => {
+  if (confirm('Delete all saved signatures?')) {
+    savedSignatures.value = [];
+    localStorage.removeItem('my_signatures');
+  }
 };
 
 const selectSignature = () => {
@@ -649,6 +682,7 @@ const startResize = (e, direction) => {
 const deselectAll = () => {
   selectedTextIndex.value = null;
   selectedSignature.value = false;
+  isSigDropdownOpen.value = false;
 };
 
 // --- 4. Download ---
@@ -728,6 +762,20 @@ const downloadPdf = async () => {
 .hover-lift:hover { transform: translateY(-2px); transition: transform 0.2s; }
 .hover-white:hover { color: white !important; }
 .transition-all { transition: all 0.2s; }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+/* CUSTOM DROPDOWN */
+.custom-dropdown-menu {
+  min-width: 200px;
+  z-index: 2500;
+  animation: slideDown 0.2s ease-out;
+}
+.dropdown-item {
+  background: transparent; border: none; width: 100%; text-align: left; transition: background 0.2s; cursor: pointer;
+}
+.dropdown-item:hover { background: rgba(255,255,255,0.1); }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
 
 /* ELEMENT WRAPPER */
 .element-wrapper {
@@ -768,27 +816,6 @@ const downloadPdf = async () => {
   height: 100%;
   min-width: 40px;
   overflow: hidden;
-}
-
-/* FLOATING TOOLBAR */
-.floating-toolbar {
-  position: absolute;
-  top: -45px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #222;
-  border-radius: 8px;
-  padding: 6px 10px;
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  z-index: 2000;
-  white-space: nowrap;
-}
-.floating-toolbar::after {
-  content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
-  border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #222;
 }
 
 /* RESIZE HANDLES */
