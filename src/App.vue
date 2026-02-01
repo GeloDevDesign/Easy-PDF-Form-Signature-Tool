@@ -1,53 +1,29 @@
 <template>
   <div class="bg-dark min-vh-100 text-white pb-5 position-relative d-flex flex-column font-sans app-container">
     
-    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="background: #333 !important;">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary mb-4 shadow-lg sticky-top" style="background: #2b2b2b !important;">
       <div class="container-fluid px-3">
-        <div class="d-flex justify-content-between w-100 align-items-center mb-2" v-if="pdfFile">
-             <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1rem;">
-              <span class="me-2">✨</span> PDF Editor
-            </span>
-             <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-md-none">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <span class="navbar-brand fw-bold d-flex align-items-center m-0" style="font-size: 1.1rem;">
+            <span class="me-2">✨</span> PDF Editor
+          </span>
+          
+          <div class="d-flex gap-2" v-if="pdfFile">
+            <button 
+              @click="toggleTextMode" 
+              :class="['btn btn-sm d-flex align-items-center gap-2 rounded-pill px-3', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
+              <span>{{ isTextMode ? 'Tap PDF to Type' : '+ Text' }}</span>
+            </button>
+
+            <button @click="openSignaturePad" class="btn btn-sm btn-warning rounded-pill px-3">Sign</button>
+            <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning rounded-pill px-3 d-none d-md-block">
+              Saved
+            </button>
+            
+            <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold rounded-pill px-4 shadow-sm">
               Save
             </button>
-        </div>
-        <span class="navbar-brand fw-bold d-none d-md-flex align-items-center" v-else>
-          <span class="me-2">✨</span> Vue PDF Editor
-        </span>
-        
-        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center w-100" v-if="pdfFile">
-          
-          <button 
-            @click="toggleTextMode" 
-            :class="['btn btn-sm d-flex align-items-center gap-2', isTextMode ? 'btn-info text-dark fw-bold' : 'btn-outline-light']">
-            <span>{{ isTextMode ? 'Tap to Type' : 'Add Text' }}</span>
-          </button>
-          
-          <div class="d-flex align-items-center gap-1 bg-dark rounded px-2 py-1 border border-secondary" v-if="isTextMode || selectedTextIndex !== null">
-            <input 
-              type="number" 
-              v-model.number="currentFontSize" 
-              min="8" max="72" 
-              class="form-control form-control-sm bg-transparent text-white border-0 p-0 text-center" 
-              style="width: 35px;"
-              @input="updateSelectedTextStyle"
-            />
-            <div class="vr bg-secondary mx-1"></div>
-            <button @click="toggleBold" class="btn btn-sm p-0 text-white" :class="{ 'text-info': currentFontWeight === 'bold' }">B</button>
-            <div class="vr bg-secondary mx-1"></div>
-            <button @click="toggleItalic" class="btn btn-sm p-0 text-white" :class="{ 'text-info': currentFontStyle === 'italic' }">I</button>
           </div>
-          
-          <div class="btn-group">
-            <button @click="openSignaturePad" class="btn btn-sm btn-warning">Sign</button>
-            <button @click="showSavedSignatures = true" class="btn btn-sm btn-outline-warning">
-              Saved ({{ savedSignatures.length }})
-            </button>
-          </div>
-          
-          <button @click="downloadPdf" class="btn btn-sm btn-success fw-bold px-4 shadow-sm d-none d-md-block">
-            Download PDF
-          </button>
         </div>
       </div>
     </nav>
@@ -95,9 +71,31 @@
           @touchstart="startDragText($event, index)"
           @click.stop="selectText(index)">
           
-          <div v-if="selectedTextIndex === index" class="floating-actions">
-            <span class="drag-handle">Move</span>
-            <button @click.stop="removeText(index)" class="action-btn delete">Delete</button>
+          <div v-if="selectedTextIndex === index" class="floating-toolbar" @mousedown.stop @touchstart.stop>
+            <div class="d-flex align-items-center bg-dark rounded p-1 me-2 border border-secondary">
+              <button @click="adjustFontSize(index, -2)" class="btn btn-sm btn-dark text-white py-0 px-2">−</button>
+              <span class="mx-2 small text-muted user-select-none" style="min-width: 20px; text-align: center;">{{ item.fontSize }}</span>
+              <button @click="adjustFontSize(index, 2)" class="btn btn-sm btn-dark text-white py-0 px-2">+</button>
+            </div>
+
+            <div class="btn-group me-2">
+              <button 
+                @click="toggleFontWeight(index)" 
+                class="btn btn-sm" 
+                :class="item.fontWeight === 'bold' ? 'btn-light text-dark' : 'btn-dark text-white border-secondary'">
+                <strong>B</strong>
+              </button>
+              <button 
+                @click="toggleFontStyle(index)" 
+                class="btn btn-sm" 
+                :class="item.fontStyle === 'italic' ? 'btn-light text-dark' : 'btn-dark text-white border-secondary'">
+                <em>I</em>
+              </button>
+            </div>
+
+            <button @click.stop="removeText(index)" class="btn btn-sm btn-danger px-2 d-flex align-items-center">
+              <span style="font-size: 1.2em; line-height: 0.5;">×</span>
+            </button>
           </div>
 
           <input 
@@ -131,10 +129,10 @@
           @touchstart="startDragSig"
           @click.stop="selectSignature">
           
-          <div v-if="selectedSignature" class="floating-actions">
-            <span class="drag-handle">Move</span>
-            <button @click.stop="saveCurrentSigToStorage" class="action-btn save">Save</button>
-            <button @click.stop="removeSignature" class="action-btn delete">Delete</button>
+          <div v-if="selectedSignature" class="floating-toolbar" @mousedown.stop @touchstart.stop>
+            <span class="text-white small me-2 user-select-none">Signature</span>
+            <button @click.stop="saveCurrentSigToStorage" class="btn btn-sm btn-success py-0 px-2 me-2">Save</button>
+            <button @click.stop="removeSignature" class="btn btn-sm btn-danger py-0 px-2">Delete</button>
           </div>
 
           <img :src="signatureImage" class="w-100 h-100" style="pointer-events: none; user-select: none;" />
@@ -227,10 +225,8 @@ const isTextMode = ref(false);
 const textElements = ref([]);
 const scale = ref(1.5);
 
-// Typography
-const currentFontSize = ref(18);
-const currentFontWeight = ref('normal');
-const currentFontStyle = ref('normal');
+// Typography Defaults
+const defaultFontSize = 18;
 
 // Selection
 const selectedTextIndex = ref(null);
@@ -306,20 +302,10 @@ const renderPdf = async (buffer) => {
   await page.render({ canvasContext: context, viewport: finalViewport }).promise;
 };
 
-// --- 2. Text Logic ---
+// --- 2. Text Logic (New & Improved) ---
 const toggleTextMode = () => {
   isTextMode.value = !isTextMode.value;
   if (isTextMode.value) deselectAll();
-};
-
-const toggleBold = () => {
-  currentFontWeight.value = currentFontWeight.value === 'bold' ? 'normal' : 'bold';
-  updateSelectedTextStyle();
-};
-
-const toggleItalic = () => {
-  currentFontStyle.value = currentFontStyle.value === 'italic' ? 'normal' : 'italic';
-  updateSelectedTextStyle();
 };
 
 const handleCanvasClick = (e) => {
@@ -331,9 +317,9 @@ const handleCanvasClick = (e) => {
     x: clientPos.x - rect.left, 
     y: clientPos.y - rect.top, 
     text: '',
-    fontSize: currentFontSize.value,
-    fontWeight: currentFontWeight.value,
-    fontStyle: currentFontStyle.value
+    fontSize: defaultFontSize,
+    fontWeight: 'normal',
+    fontStyle: 'normal'
   });
   selectedTextIndex.value = textElements.value.length - 1;
   isTextMode.value = false;
@@ -342,19 +328,25 @@ const handleCanvasClick = (e) => {
 const selectText = (index) => {
   selectedTextIndex.value = index;
   selectedSignature.value = false;
-  const item = textElements.value[index];
-  currentFontSize.value = item.fontSize;
-  currentFontWeight.value = item.fontWeight;
-  currentFontStyle.value = item.fontStyle;
 };
 
-const updateSelectedTextStyle = () => {
-  if (selectedTextIndex.value !== null) {
-    const item = textElements.value[selectedTextIndex.value];
-    item.fontSize = currentFontSize.value;
-    item.fontWeight = currentFontWeight.value;
-    item.fontStyle = currentFontStyle.value;
+// NEW: Direct Text Styling Functions
+const adjustFontSize = (index, amount) => {
+  const item = textElements.value[index];
+  const newSize = item.fontSize + amount;
+  if (newSize >= 8 && newSize <= 72) {
+    item.fontSize = newSize;
   }
+};
+
+const toggleFontWeight = (index) => {
+  const item = textElements.value[index];
+  item.fontWeight = item.fontWeight === 'bold' ? 'normal' : 'bold';
+};
+
+const toggleFontStyle = (index) => {
+  const item = textElements.value[index];
+  item.fontStyle = item.fontStyle === 'italic' ? 'normal' : 'italic';
 };
 
 const startDragText = (e, index) => {
@@ -396,16 +388,13 @@ const removeText = (index) => {
 };
 
 // --- 3. Optimized Snappy Signature Logic ---
-
 const openSignaturePad = async () => {
   showSignaturePad.value = true;
-  // Wait for modal to render to size canvas correctly
   await nextTick();
   if (sigCanvas.value && sigPadContainer.value) {
-    // 1:1 Pixel Mapping for sharp, non-distorted drawing
     sigCanvas.value.width = sigPadContainer.value.offsetWidth;
     sigCanvas.value.height = sigPadContainer.value.offsetHeight;
-    clearSignature(); // ensure clean state
+    clearSignature();
   }
 };
 
@@ -414,16 +403,12 @@ const startDrawing = (e) => {
   isDrawing = true;
   const canvas = sigCanvas.value;
   ctx = canvas.getContext('2d');
-  
-  // RAW SETTINGS FOR SNAPPY FEEL
   ctx.lineWidth = 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = '#000';
   
-  // Cache rect once
   canvasRect = canvas.getBoundingClientRect();
-  
   const { x, y } = getDrawPos(e);
   ctx.beginPath();
   ctx.moveTo(x, y);
@@ -433,8 +418,6 @@ const draw = (e) => {
   if (!isDrawing) return;
   e.preventDefault(); 
   const { x, y } = getDrawPos(e);
-  
-  // DIRECT DRAWING - No Smoothing, Instant Feedback
   ctx.lineTo(x, y);
   ctx.stroke();
 };
@@ -447,7 +430,6 @@ const stopDrawing = () => {
 
 const getDrawPos = (e) => {
   const pos = getClientPos(e);
-  // Simple subtraction is fastest
   return {
     x: pos.x - canvasRect.left,
     y: pos.y - canvasRect.top
@@ -466,7 +448,6 @@ const closeSignaturePad = () => {
 
 const saveSignature = () => {
   const canvas = sigCanvas.value;
-  // Empty check
   const pixelBuffer = new Uint32Array(
     canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.buffer
   );
@@ -476,7 +457,6 @@ const saveSignature = () => {
   }
   
   const dataUrl = canvas.toDataURL('image/png');
-  // Save ASPECT RATIO info so it's not squished later
   const ratio = canvas.width / canvas.height;
   
   const sigObject = { data: dataUrl, ratio: ratio };
@@ -488,19 +468,15 @@ const saveSignature = () => {
 };
 
 const useSavedSignature = (sigObject) => {
-  // Handle old string format vs new object format
   const imgData = typeof sigObject === 'string' ? sigObject : sigObject.data;
-  const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2); // Default to 2:1 if unknown
+  const ratio = typeof sigObject === 'string' ? 2 : (sigObject.ratio || 2);
   
   signatureImage.value = imgData;
   selectedSignature.value = true;
   selectedTextIndex.value = null;
   showSavedSignatures.value = false;
   
-  // RESET POSITION
   sigPos.value = { x: 50, y: 100 };
-  
-  // SET CORRECT ASPECT RATIO SIZE
   const baseWidth = 200;
   sigSize.value = { 
     width: baseWidth, 
@@ -509,8 +485,7 @@ const useSavedSignature = (sigObject) => {
 };
 
 const saveCurrentSigToStorage = () => {
-  // Re-save logic if needed (simplified here)
-  alert('Signature already in library');
+  alert('Signature saved!');
 };
 
 const deleteSavedSignature = (index) => {
@@ -529,7 +504,6 @@ const removeSignature = () => {
   selectedSignature.value = false;
 };
 
-// Drag Signature
 const startDragSig = (e) => {
   if (isResizingSig.value) return;
   if (e.type === 'touchstart') e.preventDefault();
@@ -565,7 +539,6 @@ const startDragSig = (e) => {
   window.addEventListener('touchend', onEnd);
 };
 
-// Resize Signature (Maintains Ratio if dragged diagonally)
 const startResize = (e, direction) => {
   e.preventDefault(); 
   e.stopPropagation();
@@ -585,7 +558,6 @@ const startResize = (e, direction) => {
     const movePos = getClientPos(moveEvent);
     const deltaX = movePos.x - startPos.x;
     
-    // Maintain Aspect Ratio during resize
     const ratio = startSize.width / startSize.height;
     
     if (direction.includes('e')) {
@@ -599,7 +571,6 @@ const startResize = (e, direction) => {
       sigSize.value.height = newWidth / ratio;
       sigPos.value.x = startPosX + (startSize.width - newWidth);
     }
-    // Only adjust Y if needed based on calculated height
     if (direction.includes('n')) {
       sigPos.value.y = startPosY + (startSize.height - sigSize.value.height);
     }
@@ -634,7 +605,6 @@ const downloadPdf = async () => {
     const firstPage = pages[0];
     const { height } = firstPage.getSize();
 
-    // Draw Text
     for (const item of textElements.value) {
       if (item.text?.trim()) {
         let font;
@@ -653,7 +623,6 @@ const downloadPdf = async () => {
       }
     }
 
-    // Draw Signature
     if (signatureImage.value) {
       const pngImage = await pdfDoc.embedPng(signatureImage.value);
       firstPage.drawImage(pngImage, {
@@ -707,34 +676,26 @@ const downloadPdf = async () => {
   background-color: rgba(13, 110, 253, 0.05);
 }
 
-/* ACTIONS BAR */
-.floating-actions {
+/* FLOATING TOOLBAR (NEW) */
+.floating-toolbar {
   position: absolute;
-  top: -40px;
+  top: -45px;
   left: 50%;
   transform: translateX(-50%);
   background: #222;
   border-radius: 8px;
   padding: 6px 10px;
   display: flex;
-  gap: 12px;
+  gap: 5px;
   align-items: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   z-index: 2000;
   white-space: nowrap;
 }
-.floating-actions::after {
-  content: ''; position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+.floating-toolbar::after {
+  content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
   border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #222;
 }
-
-.action-btn {
-  background: none; border: none; color: #fff; font-size: 14px;
-  padding: 4px 8px; border-radius: 4px; font-weight: 500;
-}
-.action-btn.delete { color: #ff6b6b; }
-.action-btn.save { color: #51cf66; }
-.drag-handle { color: #aaa; padding-right: 8px; border-right: 1px solid #444; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
 
 .bare-input {
   background: transparent; border: none; color: #000;
